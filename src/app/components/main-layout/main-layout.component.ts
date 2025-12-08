@@ -33,7 +33,7 @@ import { ProjectStateService } from '../../services/project-state.service';
         <app-activity-bar />
         
         <!-- Sidebar (250px) -->
-        @if (sidebarVisible()) {
+        @if (projectState.sidebarVisible()) {
           <app-sidebar class="w-[250px] flex-shrink-0" />
         }
         
@@ -41,7 +41,7 @@ import { ProjectStateService } from '../../services/project-state.service';
         <app-editor class="flex-1 min-w-0 overflow-hidden" />
         
         <!-- Info Panel / Right Sidebar (280px) -->
-        @if (infoPanelVisible()) {
+        @if (projectState.infoPanelVisible()) {
           <app-info-panel class="w-[280px] flex-shrink-0" />
         }
 
@@ -69,20 +69,14 @@ import { ProjectStateService } from '../../services/project-state.service';
   `]
 })
 export class MainLayoutComponent {
-  sidebarVisible = signal(true);
-  infoPanelVisible = signal(true);
-
   projectState = inject(ProjectStateService);
+  
+  // Use signals from service directly in template
+  // sidebarVisible -> projectState.sidebarVisible
+  // infoPanelVisible -> projectState.infoPanelVisible
 
   constructor() {
-    // Listen for toggle events from header
-    document.addEventListener('toggleSidebar', ((e: Event) => {
-      this.sidebarVisible.set((e as CustomEvent).detail);
-    }) as EventListener);
-
-    document.addEventListener('toggleInfoPanel', ((e: Event) => {
-      this.infoPanelVisible.set((e as CustomEvent).detail);
-    }) as EventListener);
+    // No need for event listeners anymore as state is shared
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -94,7 +88,8 @@ export class MainLayoutComponent {
       switch (event.key.toLowerCase()) {
         case 's': // Save
           if (isShift) {
-             // Save All - TODO
+             event.preventDefault();
+             this.projectState.saveAllFiles();
           } else {
             event.preventDefault();
             this.projectState.saveActiveFile();
@@ -114,7 +109,7 @@ export class MainLayoutComponent {
           break;
         case 'b': // Toggle Sidebar
           event.preventDefault();
-          this.sidebarVisible.update(v => !v);
+          this.projectState.toggleSidebar();
           break;
         // Edit menu shortcuts are handled by focused element or EditorComponent
       }

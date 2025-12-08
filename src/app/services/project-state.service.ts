@@ -6,6 +6,10 @@ import { FileNode, OpenedFile } from '../models/file-node.model';
   providedIn: 'root'
 })
 export class ProjectStateService {
+  // UI State
+  readonly sidebarVisible = signal<boolean>(true);
+  readonly infoPanelVisible = signal<boolean>(true);
+
   // State signals
   private _currentFolderPath = signal<string>('');
   private _fileTree = signal<FileNode | null>(null);
@@ -153,7 +157,7 @@ export class ProjectStateService {
         files.map(f =>
           this.normalizePath(f.path) === normalizedTarget
             ? { ...f, isDirty: false }
-            : f
+          : f
         )
       );
       return true;
@@ -164,31 +168,22 @@ export class ProjectStateService {
   }
 
   /**
-   * Save active file
-   */
-  async saveActiveFile(): Promise<boolean> {
-    const activePath = this._activeFilePath();
-    if (!activePath) return false;
-    return this.saveFile(activePath);
-  }
-
-  /**
    * Close a file
    */
   closeFile(filePath: string): void {
-    const normalizedTarget = this.normalizePath(filePath);
     const files = this._openedFiles();
-    const index = files.findIndex(f => this.normalizePath(f.path) === normalizedTarget);
+    const index = files.findIndex(f => f.path === filePath);
+    
     if (index === -1) return;
 
-    this._openedFiles.update(files => files.filter((_, i) => i !== index));
+    const newFiles = files.filter((_, i) => i !== index);
+    this._openedFiles.set(newFiles);
 
     // Update active file if we closed the active one
     if (this._activeFilePath() === filePath) {
-      const remaining = this._openedFiles();
-      if (remaining.length > 0) {
-        const newIndex = Math.min(index, remaining.length - 1);
-        this._activeFilePath.set(remaining[newIndex].path);
+      if (newFiles.length > 0) {
+        const newIndex = Math.min(index, newFiles.length - 1);
+        this._activeFilePath.set(newFiles[newIndex].path);
       } else {
         this._activeFilePath.set('');
       }
@@ -296,6 +291,42 @@ export class ProjectStateService {
    */
   triggerNewFolder(): void {
     document.dispatchEvent(new CustomEvent('newFolder'));
+  }
+
+  /**
+   * Toggle Sidebar
+   */
+  toggleSidebar(): void {
+    this.sidebarVisible.update(v => !v);
+  }
+
+  /**
+   * Toggle Info Panel
+   */
+  toggleInfoPanel(): void {
+    this.infoPanelVisible.update(v => !v);
+  }
+
+  /**
+   * Save the currently active file
+   */
+  async saveActiveFile(): Promise<void> {
+    const activePath = this._activeFilePath();
+    if (activePath) {
+      await this.saveFile(activePath);
+    }
+  }
+
+  /**
+   * Save all opened files
+   */
+  async saveAllFiles(): Promise<void> {
+    const files = this._openedFiles();
+    for (const file of files) {
+      if (file.isDirty) {
+        await this.saveFile(file.path);
+      }
+    }
   }
 
   /**

@@ -49,7 +49,7 @@ import { FileTreeComponent } from '../file-tree/file-tree.component';
               title="Refresh Explorer"
               (click)="onRefresh($event)"
             >
-              <span class="material-icons text-base">refresh</span>
+              <span class="material-icons text-base" [class.animate-spin]="isRefreshing()">refresh</span>
             </button>
           </div>
         </div>
@@ -128,6 +128,7 @@ export class SidebarComponent {
   
   projectExpanded = signal(true);
   isCreating = signal(false);
+  isRefreshing = signal(false);
   creatingType = signal<'file' | 'folder'>('file');
   newItemName = '';
 
@@ -169,9 +170,11 @@ export class SidebarComponent {
     this.projectState.openProject();
   }
 
-  onRefresh(event: Event): void {
+  async onRefresh(event: Event): Promise<void> {
     event.stopPropagation();
-    this.projectState.refreshFileTree();
+    this.isRefreshing.set(true);
+    await this.projectState.refreshFileTree();
+    this.isRefreshing.set(false);
   }
 
   startNewFile(event: Event): void {

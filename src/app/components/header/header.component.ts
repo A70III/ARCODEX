@@ -47,6 +47,9 @@ interface MenuItem {
                 <button class="menu-item" (click)="saveActiveFile()">
                   <span>Save</span><span class="shortcut">Ctrl+S</span>
                 </button>
+                <button class="menu-item" (click)="saveAllFiles()">
+                  <span>Save All</span><span class="shortcut">Ctrl+Shift+S</span>
+                </button>
                 <button class="menu-item" (click)="closeFile()">
                   <span>Close File</span><span class="shortcut">Ctrl+W</span>
                 </button>
@@ -86,8 +89,8 @@ interface MenuItem {
         <div class="flex items-center mr-2 px-2 border-r border-[#3c3c3c] h-[16px]">
             <button
             class="p-1 hover:bg-[#3c3c3c] rounded text-[#858585] hover:text-[#cccccc] transition-colors"
-            [class.text-white]="sidebarVisible()"
-            [class.bg-[#3c3c3c]]="sidebarVisible()"
+            [class.text-white]="projectState.sidebarVisible()"
+            [class.bg-[#3c3c3c]]="projectState.sidebarVisible()"
             title="Toggle Sidebar (Ctrl+B)"
             (click)="toggleSidebar()"
             >
@@ -95,8 +98,8 @@ interface MenuItem {
             </button>
             <button
             class="p-1 hover:bg-[#3c3c3c] rounded text-[#858585] hover:text-[#cccccc] transition-colors ml-1"
-            [class.text-white]="infoPanelVisible()"
-            [class.bg-[#3c3c3c]]="infoPanelVisible()"
+            [class.text-white]="projectState.infoPanelVisible()"
+            [class.bg-[#3c3c3c]]="projectState.infoPanelVisible()"
             title="Toggle Info Panel"
             (click)="toggleInfoPanel()"
             >
@@ -168,8 +171,6 @@ export class HeaderComponent {
   projectState = inject(ProjectStateService);
   
   activeMenu = signal<string | null>(null);
-  sidebarVisible = signal(true);
-  infoPanelVisible = signal(true);
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
@@ -188,19 +189,12 @@ export class HeaderComponent {
     }
   }
 
-  executeMenuItem(action: () => void): void {
-    this.activeMenu.set(null);
-    action();
-  }
-
   toggleSidebar(): void {
-    this.sidebarVisible.update(v => !v);
-    document.dispatchEvent(new CustomEvent('toggleSidebar', { detail: this.sidebarVisible() }));
+    this.projectState.toggleSidebar();
   }
 
   toggleInfoPanel(): void {
-    this.infoPanelVisible.update(v => !v);
-    document.dispatchEvent(new CustomEvent('toggleInfoPanel', { detail: this.infoPanelVisible() }));
+    this.projectState.toggleInfoPanel();
   }
 
   triggerNewFile(): void {
@@ -219,8 +213,13 @@ export class HeaderComponent {
   }
 
   closeProject(): void {
-      this.activeMenu.set(null);
-      this.projectState.closeProject();
+    this.activeMenu.set(null);
+    this.projectState.closeProject();
+  }
+
+  saveAllFiles(): void {
+    this.activeMenu.set(null);
+    this.projectState.saveAllFiles();
   }
 
   saveActiveFile(): void {
@@ -230,9 +229,9 @@ export class HeaderComponent {
 
   closeFile(): void {
     this.activeMenu.set(null);
-    const activePath = this.projectState.activeFilePath();
-    if (activePath) {
-      this.projectState.closeFile(activePath);
+    const activeFile = this.projectState.activeFile();
+    if (activeFile) {
+      this.projectState.closeFile(activeFile.path);
     }
   }
 
