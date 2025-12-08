@@ -1,17 +1,10 @@
-import { Component } from "@angular/core";
-import { MainLayoutComponent } from "./components/main-layout/main-layout.component";
+import { Component, inject, signal } from '@angular/core';
+import { MainLayoutComponent } from './components/main-layout/main-layout.component';
 
 @Component({
-  selector: "app-root",
+  selector: 'app-root',
   standalone: true,
   imports: [MainLayoutComponent],
-  template: `<app-main-layout />`,
-  styles: [`
-    :host {
-      display: block;
-      height: 100vh;
-      width: 100vw;
-    }
-  `]
+  template: `<app-main-layout />`
 })
 export class AppComponent {}

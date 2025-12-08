@@ -152,6 +152,12 @@ fn delete_file(path: String) -> Result<(), String> {
     }
 }
 
+/// Command 6: Create a new folder
+#[tauri::command]
+fn create_folder(path: String) -> Result<(), String> {
+    fs::create_dir_all(&path).map_err(|e| format!("Failed to create folder: {}", e))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -163,7 +169,9 @@ pub fn run() {
             read_project_dir,
             read_file_content,
             save_file_content,
-            delete_file
+            save_file_content,
+            delete_file,
+            create_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

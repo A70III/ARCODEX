@@ -5,6 +5,7 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
 import { EditorComponent } from '../editor/editor.component';
 import { InfoPanelComponent } from '../info-panel/info-panel.component';
 import { StatusBarComponent } from '../status-bar/status-bar.component';
+import { ProjectStateService } from '../../services/project-state.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -50,14 +51,52 @@ export class MainLayoutComponent {
   sidebarVisible = signal(true);
   infoPanelVisible = signal(true);
 
+  projectState = inject(ProjectStateService);
+
   constructor() {
     // Listen for toggle events from header
-    document.addEventListener('toggleSidebar', ((e: CustomEvent) => {
-      this.sidebarVisible.set(e.detail);
+    document.addEventListener('toggleSidebar', ((e: Event) => {
+      this.sidebarVisible.set((e as CustomEvent).detail);
     }) as EventListener);
 
-    document.addEventListener('toggleInfoPanel', ((e: CustomEvent) => {
-      this.infoPanelVisible.set(e.detail);
+    document.addEventListener('toggleInfoPanel', ((e: Event) => {
+      this.infoPanelVisible.set((e as CustomEvent).detail);
     }) as EventListener);
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+    const isShift = event.shiftKey;
+
+    if (isCtrlOrCmd) {
+      switch (event.key.toLowerCase()) {
+        case 's': // Save
+          if (isShift) {
+             // Save All - TODO
+          } else {
+            event.preventDefault();
+            this.projectState.saveActiveFile();
+          }
+          break;
+        case 'n': // New File / New Folder
+          event.preventDefault();
+          if (isShift) {
+            this.projectState.triggerNewFolder();
+          } else {
+            this.projectState.triggerNewFile();
+          }
+          break;
+        case 'o': // Open Folder
+          event.preventDefault();
+          this.projectState.openProject();
+          break;
+        case 'b': // Toggle Sidebar
+          event.preventDefault();
+          this.sidebarVisible.update(v => !v);
+          break;
+        // Edit menu shortcuts are handled by focused element or EditorComponent
+      }
+    }
   }
 }

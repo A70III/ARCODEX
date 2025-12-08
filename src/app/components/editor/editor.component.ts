@@ -320,10 +320,41 @@ export class EditorComponent implements OnDestroy {
         this.destroyEditor();
       }
     });
+
+    // Listen for editor actions from header menu or global shortcuts
+    document.addEventListener('editorAction', this.onEditorAction.bind(this));
   }
 
   ngOnDestroy(): void {
     this.destroyEditor();
+    document.removeEventListener('editorAction', this.onEditorAction.bind(this));
+  }
+
+  private onEditorAction(e: Event): void {
+    const action = (e as CustomEvent).detail;
+    if (!this.editor) return;
+
+    switch (action) {
+      case 'Undo': this.undo(); break;
+      case 'Redo': this.redo(); break;
+      case 'Cut': 
+        // TipTap doesn't support programmatic cut/copy easily due to browser security
+        // But we can try focusing and letting browser handle checks
+        this.editor.commands.focus();
+        document.execCommand('cut');
+        break;
+      case 'Copy':
+        this.editor.commands.focus();
+        document.execCommand('copy');
+        break;
+      case 'Paste':
+        this.editor.commands.focus();
+        navigator.clipboard.readText().then(text => {
+          this.editor?.commands.insertContent(text);
+        }).catch(err => console.error('Failed to read clipboard', err));
+        break;
+      // Find/Replace would require a more complex UI/Extension
+    }
   }
 
   private initEditor(content: string): void {
@@ -450,7 +481,9 @@ export class EditorComponent implements OnDestroy {
   }
 
   onKeyDown(event: KeyboardEvent): void {
-    if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+    const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+    
+    if (isCtrlOrCmd && event.key === 's') {
       event.preventDefault();
       this.projectState.saveActiveFile();
     }

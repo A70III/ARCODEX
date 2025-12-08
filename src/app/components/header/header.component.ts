@@ -73,7 +73,7 @@ interface MenuItem {
           title="Toggle Sidebar"
           (click)="toggleSidebar()"
         >
-          <span class="material-icons text-lg">view_sidebar</span>
+<span class="material-icons">view_sidebar</span>
         </button>
         <button
           class="p-1.5 hover:bg-[#505050] rounded text-[#cccccc] transition-colors"
@@ -81,7 +81,9 @@ interface MenuItem {
           title="Toggle Info Panel"
           (click)="toggleInfoPanel()"
         >
-          <span class="material-icons text-lg">info</span>
+<span class="material-icons">menu_open</span>
+
+
         </button>
       </div>
     </div>
@@ -99,12 +101,11 @@ export class HeaderComponent {
       label: 'File',
       items: [
         { label: 'New File', shortcut: 'Ctrl+N', action: () => this.newFile() },
-        { label: 'New Folder', action: () => this.newFolder() },
+        { label: 'New Folder', shortcut: 'Ctrl+Shift+N', action: () => this.newFolder() },
         { divider: true, label: '' },
         { label: 'Open Folder...', shortcut: 'Ctrl+O', action: () => this.openFolder() },
         { divider: true, label: '' },
         { label: 'Save', shortcut: 'Ctrl+S', action: () => this.save() },
-        { label: 'Save All', shortcut: 'Ctrl+Shift+S', action: () => this.saveAll() },
         { divider: true, label: '' },
         { label: 'Close File', shortcut: 'Ctrl+W', action: () => this.closeFile() },
       ] as MenuItem[]
@@ -112,15 +113,12 @@ export class HeaderComponent {
     {
       label: 'Edit',
       items: [
-        { label: 'Undo', shortcut: 'Ctrl+Z', disabled: true },
-        { label: 'Redo', shortcut: 'Ctrl+Y', disabled: true },
+        { label: 'Undo', shortcut: 'Ctrl+Z', action: () => this.triggerEdit('Undo') },
+        { label: 'Redo', shortcut: 'Ctrl+Y', action: () => this.triggerEdit('Redo') },
         { divider: true, label: '' },
-        { label: 'Cut', shortcut: 'Ctrl+X', disabled: true },
-        { label: 'Copy', shortcut: 'Ctrl+C', disabled: true },
-        { label: 'Paste', shortcut: 'Ctrl+V', disabled: true },
-        { divider: true, label: '' },
-        { label: 'Find', shortcut: 'Ctrl+F', disabled: true },
-        { label: 'Replace', shortcut: 'Ctrl+H', disabled: true },
+        { label: 'Cut', shortcut: 'Ctrl+X', action: () => this.triggerEdit('Cut') },
+        { label: 'Copy', shortcut: 'Ctrl+C', action: () => this.triggerEdit('Copy') },
+        { label: 'Paste', shortcut: 'Ctrl+V', action: () => this.triggerEdit('Paste') },
       ] as MenuItem[]
     },
     {
@@ -128,10 +126,6 @@ export class HeaderComponent {
       items: [
         { label: 'Toggle Sidebar', shortcut: 'Ctrl+B', action: () => this.toggleSidebar() },
         { label: 'Toggle Info Panel', action: () => this.toggleInfoPanel() },
-        { divider: true, label: '' },
-        { label: 'Zoom In', shortcut: 'Ctrl++', disabled: true },
-        { label: 'Zoom Out', shortcut: 'Ctrl+-', disabled: true },
-        { label: 'Reset Zoom', shortcut: 'Ctrl+0', disabled: true },
       ] as MenuItem[]
     }
   ];
@@ -171,12 +165,11 @@ export class HeaderComponent {
   }
 
   newFile(): void {
-    // Dispatch event to sidebar
-    document.dispatchEvent(new CustomEvent('newFile'));
+    this.projectState.triggerNewFile();
   }
 
   newFolder(): void {
-    document.dispatchEvent(new CustomEvent('newFolder'));
+    this.projectState.triggerNewFolder();
   }
 
   openFolder(): void {
@@ -187,14 +180,14 @@ export class HeaderComponent {
     this.projectState.saveActiveFile();
   }
 
-  saveAll(): void {
-    // TODO: Implement save all
-  }
-
   closeFile(): void {
     const activePath = this.projectState.activeFilePath();
     if (activePath) {
       this.projectState.closeFile(activePath);
     }
+  }
+
+  triggerEdit(action: string): void {
+    this.projectState.triggerEditAction(action);
   }
 }

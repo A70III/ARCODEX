@@ -106,6 +106,17 @@ export class SidebarComponent {
   creatingType = signal<'file' | 'folder'>('file');
   newItemName = '';
 
+  constructor() {
+    // Listen for creation events
+    document.addEventListener('newFile', ((e: Event) => {
+      this.startNewFile(e);
+    }) as EventListener);
+
+    document.addEventListener('newFolder', ((e: Event) => {
+      this.startNewFolder(e);
+    }) as EventListener);
+  }
+
   toggleProjectExpanded(): void {
     this.projectExpanded.update(v => !v);
   }
@@ -121,6 +132,9 @@ export class SidebarComponent {
 
   startNewFile(event: Event): void {
     event.stopPropagation();
+    if (!this.projectState.currentFolderPath()) return;
+    
+    this.projectExpanded.set(true);
     this.isCreating.set(true);
     this.creatingType.set('file');
     this.newItemName = '';
@@ -134,6 +148,9 @@ export class SidebarComponent {
 
   startNewFolder(event: Event): void {
     event.stopPropagation();
+    if (!this.projectState.currentFolderPath()) return;
+
+    this.projectExpanded.set(true);
     this.isCreating.set(true);
     this.creatingType.set('folder');
     this.newItemName = '';
@@ -161,8 +178,8 @@ export class SidebarComponent {
       }
       this.projectState.createFile(basePath, fileName);
     } else {
-      // Create folder - TODO: implement in service
-      console.log('Create folder:', this.newItemName);
+      // Create folder
+      this.projectState.createFolder(basePath, this.newItemName.trim());
     }
 
     this.cancelCreate();

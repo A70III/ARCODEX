@@ -63,13 +63,22 @@ export class ProjectStateService {
   }
 
   /**
+   * Normalize path for consistent comparison (handle Windows backslashes)
+   */
+  private normalizePath(path: string): string {
+    return path.replace(/\\/g, '/').toLowerCase();
+  }
+
+  /**
    * Open a file in the editor
    */
   async openFile(filePath: string): Promise<void> {
+    const normalizedTarget = this.normalizePath(filePath);
+    
     // Check if already opened
-    const existing = this._openedFiles().find(f => f.path === filePath);
+    const existing = this._openedFiles().find(f => this.normalizePath(f.path) === normalizedTarget);
     if (existing) {
-      this._activeFilePath.set(filePath);
+      this._activeFilePath.set(existing.path);
       return;
     }
 
@@ -95,9 +104,10 @@ export class ProjectStateService {
    * Update file content (marks as dirty)
    */
   updateFileContent(filePath: string, content: string): void {
+    const normalizedTarget = this.normalizePath(filePath);
     this._openedFiles.update(files =>
       files.map(f =>
-        f.path === filePath
+        this.normalizePath(f.path) === normalizedTarget
           ? { ...f, content, isDirty: true }
           : f
       )
@@ -108,14 +118,28 @@ export class ProjectStateService {
    * Save file to disk
    */
   async saveFile(filePath: string): Promise<boolean> {
-    const file = this._openedFiles().find(f => f.path === filePath);
-    if (!file) return false;
+    const normalizedTarget = this.normalizePath(filePath);
+    const file = this._openedFiles().find(f => this.normalizePath(f.path) === normalizedTarget);
+    
+    if (!file) {
+      // Try to find by exact match if normalization failed (fallback)
+      const exactFile = this._openedFiles().find(f => f.path === filePath);
+      if (!exactFile) return false;
+      return this.saveFileInternal(exactFile.path, exactFile.content);
+    }
 
+    return this.saveFileInternal(file.path, file.content);
+  }
+
+  private async saveFileInternal(path: string, content: string): Promise<boolean> {
     try {
-      await invoke('save_file_content', { path: filePath, content: file.content });
+      await invoke('save_file_content', { path, content });
+      
+      // Update dirty status
+      const normalizedTarget = this.normalizePath(path);
       this._openedFiles.update(files =>
         files.map(f =>
-          f.path === filePath
+          this.normalizePath(f.path) === normalizedTarget
             ? { ...f, isDirty: false }
             : f
         )
@@ -140,12 +164,12 @@ export class ProjectStateService {
    * Close a file
    */
   closeFile(filePath: string): void {
+    const normalizedTarget = this.normalizePath(filePath);
     const files = this._openedFiles();
-    const index = files.findIndex(f => f.path === filePath);
-    
+    const index = files.findIndex(f => this.normalizePath(f.path) === normalizedTarget);
     if (index === -1) return;
 
-    this._openedFiles.update(files => files.filter(f => f.path !== filePath));
+    this._openedFiles.update(files => files.filter((_, i) => i !== index));
 
     // Update active file if we closed the active one
     if (this._activeFilePath() === filePath) {
@@ -186,14 +210,44 @@ export class ProjectStateService {
   async deleteFile(filePath: string): Promise<void> {
     try {
       await invoke('delete_file', { path: filePath });
-      
-      // Close the file if it's open
       this.closeFile(filePath);
-      
-      // Refresh tree
       await this.refreshFileTree();
     } catch (error) {
       console.error('Failed to delete file:', error);
     }
+  }
+
+  /**
+   * Create new folder
+   */
+  async createFolder(parentPath: string, folderName: string): Promise<void> {
+    const folderPath = `${parentPath}/${folderName}`;
+    try {
+      await invoke('create_folder', { path: folderPath });
+      await this.refreshFileTree();
+    } catch (error) {
+      console.error('Failed to create folder:', error);
+    }
+  }
+
+  /**
+   * Trigger new file creation event
+   */
+  triggerNewFile(): void {
+    document.dispatchEvent(new CustomEvent('newFile'));
+  }
+
+  /**
+   * Trigger new folder creation event
+   */
+  triggerNewFolder(): void {
+    document.dispatchEvent(new CustomEvent('newFolder'));
+  }
+
+  /**
+   * Trigger edit action (undo, redo, etc.)
+   */
+  triggerEditAction(action: string): void {
+    document.dispatchEvent(new CustomEvent('editorAction', { detail: action }));
   }
 }
