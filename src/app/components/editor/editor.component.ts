@@ -6,9 +6,12 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 
+import { WelcomeComponent } from '../welcome/welcome.component';
+
 @Component({
   selector: 'app-editor',
   standalone: true,
+  imports: [WelcomeComponent],
   template: `
     <div class="flex flex-col h-full bg-[#1e1e1e]">
       <!-- Tab bar -->
@@ -140,27 +143,7 @@ import TextAlign from '@tiptap/extension-text-align';
             <div #editorContainer class="editor-container h-full"></div>
           </div>
         } @else {
-          <!-- Welcome screen -->
-          <div class="flex flex-col items-center justify-center h-full text-[#6e6e6e]">
-            <span class="material-icons text-8xl mb-6 text-[#3c3c3c]">auto_stories</span>
-            <h1 class="text-2xl font-light mb-2 text-[#cccccc]">Tales IDE</h1>
-            <p class="text-sm mb-8">Your creative writing companion</p>
-            
-            <div class="flex flex-col gap-3 text-sm">
-              <div class="flex items-center gap-3 text-[#cccccc]">
-                <kbd class="px-2 py-1 bg-[#3c3c3c] rounded text-xs min-w-[80px] text-center">Ctrl+O</kbd>
-                <span class="text-[#858585]">Open folder</span>
-              </div>
-              <div class="flex items-center gap-3 text-[#cccccc]">
-                <kbd class="px-2 py-1 bg-[#3c3c3c] rounded text-xs min-w-[80px] text-center">Ctrl+N</kbd>
-                <span class="text-[#858585]">New file</span>
-              </div>
-              <div class="flex items-center gap-3 text-[#cccccc]">
-                <kbd class="px-2 py-1 bg-[#3c3c3c] rounded text-xs min-w-[80px] text-center">Ctrl+S</kbd>
-                <span class="text-[#858585]">Save your work</span>
-              </div>
-            </div>
-          </div>
+          <app-welcome class="h-full" />
         }
       </div>
     </div>
@@ -215,8 +198,18 @@ import TextAlign from '@tiptap/extension-text-align';
     
     :host ::ng-deep .tiptap p {
       margin: 0.8em 0;
+      text-indent: 2em; /* Paragraph indentation */
     }
     
+    :host ::ng-deep .tiptap h1, 
+    :host ::ng-deep .tiptap h2, 
+    :host ::ng-deep .tiptap h3,
+    :host ::ng-deep .tiptap blockquote,
+    :host ::ng-deep .tiptap ul,
+    :host ::ng-deep .tiptap ol {
+      text-indent: 0; /* Reset indent for non-paragraphs */
+    }
+
     :host ::ng-deep .tiptap h1 {
       font-size: 2em;
       font-weight: 600;
@@ -371,7 +364,7 @@ export class EditorComponent implements OnDestroy {
           types: ['heading', 'paragraph'],
         }),
         Placeholder.configure({
-          placeholder: 'Start writing your story...',
+          placeholder: 'สถาปนาเรื่องเล่าของท่าน...',
         }),
       ],
       content: this.parseContent(content),

@@ -1,4 +1,6 @@
-import { Component, Input, inject, signal, forwardRef, HostListener, ElementRef } from '@angular/core';
+import { Component, Input, inject, signal, forwardRef, HostListener, ElementRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common'; // Use CommonModule instead of explicit creating types usage if needed, but standalone imports works
+import { FormsModule } from '@angular/forms';
 import { FileNode } from '../../models/file-node.model';
 import { ProjectStateService } from '../../services/project-state.service';
 
@@ -12,14 +14,14 @@ interface ContextMenuState {
 @Component({
   selector: 'app-file-tree',
   standalone: true,
-  imports: [forwardRef(() => FileTreeComponent)],
+  imports: [forwardRef(() => FileTreeComponent), FormsModule],
   template: `
     @for (child of sortedChildren(); track child.path) {
-      <div class="select-none">
+      <div class="select-none group">
         @if (child.is_dir) {
           <!-- Folder -->
           <div 
-            class="flex items-center gap-1 py-0.5 px-1 cursor-pointer hover:bg-[#2a2d2e] rounded-sm text-[#cccccc]"
+            class="flex items-center gap-1 py-0.5 px-1 cursor-pointer hover:bg-[#2a2d2e] hover:outline hover:outline-1 hover:outline-white/20 rounded-sm text-[#cccccc]"
             [style.padding-left.px]="depth * 12 + 4"
             (click)="toggleFolder(child.path)"
             (contextmenu)="onContextMenu($event, child)"
@@ -33,8 +35,30 @@ interface ContextMenuState {
             <span class="text-sm truncate">{{ child.name }}</span>
           </div>
           
-          @if (isExpanded(child.path) && child.children) {
-            <app-file-tree [node]="child" [depth]="depth + 1" />
+          @if (isExpanded(child.path)) {
+            <!-- Inline Creation Input -->
+            @if (creatingChildState().parentId === child.path) {
+              <div class="flex items-center gap-1 py-0.5 pr-2" [style.padding-left.px]="(depth + 1) * 12 + 20">
+                <span class="material-icons text-base" [class.text-[#dcb67a]]="creatingChildState().type === 'folder'" [class.text-[#519aba]]="creatingChildState().type === 'file'">
+                  {{ creatingChildState().type === 'folder' ? 'folder' : 'description' }}
+                </span>
+                <input
+                  #newItemInput
+                  type="text"
+                  class="flex-1 bg-[#3c3c3c] border border-[#007acc] text-[#cccccc] text-sm px-2 py-0.5 rounded outline-none min-w-[50px]"
+                  [placeholder]="creatingChildState().type === 'folder' ? 'Folder Name' : 'File Name'"
+                  [(ngModel)]="newItemName"
+                  (keydown.enter)="confirmCreate()"
+                  (keydown.escape)="cancelCreate()"
+                  (blur)="onInputBlur()"
+                  (click)="$event.stopPropagation()"
+                />
+              </div>
+            }
+
+            @if (child.children) {
+              <app-file-tree [node]="child" [depth]="depth + 1" />
+            }
           }
         } @else {
           <!-- File -->
@@ -48,7 +72,7 @@ interface ContextMenuState {
             <span class="material-icons text-base" [class]="getFileIconClass(child.name)">
               {{ getFileIcon(child.name) }}
             </span>
-            <span class="text-sm truncate text-[#cccccc]">{{ child.name }}</span>
+            <span class="text-sm truncate text-[#cccccc]" [class.text-white]="isActive(child.path)">{{ child.name }}</span>
           </div>
         }
       </div>
@@ -60,8 +84,25 @@ interface ContextMenuState {
         class="fixed bg-[#252526] border border-[#454545] shadow-lg z-[1000] py-1 min-w-[160px]"
         [style.left.px]="contextMenu().x"
         [style.top.px]="contextMenu().y"
+        (click)="$event.stopPropagation()"
       >
-        @if (!contextMenu().file?.is_dir) {
+        @if (contextMenu().file?.is_dir) {
+          <button 
+            class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
+            (click)="startCreate('file')"
+          >
+            <span class="material-icons text-base">note_add</span>
+            New File
+          </button>
+          <button 
+            class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
+            (click)="startCreate('folder')"
+          >
+            <span class="material-icons text-base">create_new_folder</span>
+            New Folder
+          </button>
+          <div class="h-px bg-[#454545] my-1"></div>
+        } @else {
           <button 
             class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
             (click)="openFile()"
@@ -70,6 +111,7 @@ interface ContextMenuState {
             Open
           </button>
         }
+        
         <button 
           class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
           (click)="renameItem()"
@@ -93,10 +135,13 @@ export class FileTreeComponent {
   @Input() node!: FileNode;
   @Input() depth = 0;
 
-  private projectState = inject(ProjectStateService);
-  private elementRef = inject(ElementRef);
-  private expandedFolders = signal<Set<string>>(new Set());
+  projectState = inject(ProjectStateService);
+  expandedFolders = signal<Set<string>>(new Set());
   
+  // Creation state
+  newItemName = '';
+  creatingChildState = signal<{ parentId: string | null, type: 'file' | 'folder' }>({ parentId: null, type: 'file' });
+
   contextMenu = signal<ContextMenuState>({
     visible: false,
     x: 0,
@@ -111,7 +156,6 @@ export class FileTreeComponent {
 
   @HostListener('document:contextmenu')
   onDocumentContextMenu(): void {
-    // Close when right-clicking elsewhere
     this.closeContextMenu();
   }
 
@@ -167,6 +211,8 @@ export class FileTreeComponent {
     this.contextMenu.update(state => ({ ...state, visible: false }));
   }
 
+  // --- Actions ---
+
   openFile(): void {
     const file = this.contextMenu().file;
     if (file && !file.is_dir) {
@@ -175,11 +221,63 @@ export class FileTreeComponent {
     this.closeContextMenu();
   }
 
+  startCreate(type: 'file' | 'folder'): void {
+    const parentFile = this.contextMenu().file;
+    if (parentFile && parentFile.is_dir) {
+      // Expand folder first
+      this.expandedFolders.update(set => {
+        const newSet = new Set(set);
+        newSet.add(parentFile.path);
+        return newSet;
+      });
+
+      this.creatingChildState.set({ parentId: parentFile.path, type });
+      this.newItemName = '';
+      
+      // Auto-focus logic would go here (need ViewChild for list of inputs?)
+      // Simple timeout for now since we're using *ngIf (well, @if)
+      setTimeout(() => {
+        const inputs = document.querySelectorAll('input[type="text"]');
+        const lastInput = inputs[inputs.length - 1] as HTMLInputElement;
+        lastInput?.focus();
+      }, 50);
+    }
+    this.closeContextMenu();
+  }
+
+  confirmCreate(): void {
+    const { parentId, type } = this.creatingChildState();
+    if (!parentId || !this.newItemName.trim()) {
+      this.cancelCreate();
+      return;
+    }
+
+    if (type === 'file') {
+      let fileName = this.newItemName.trim();
+      if (!fileName.includes('.')) fileName += '.md';
+      this.projectState.createFile(parentId, fileName);
+    } else {
+      this.projectState.createFolder(parentId, this.newItemName.trim());
+    }
+    
+    this.cancelCreate();
+  }
+
+  cancelCreate(): void {
+    this.creatingChildState.set({ parentId: null, type: 'file' });
+    this.newItemName = '';
+  }
+
+  onInputBlur(): void {
+    setTimeout(() => {
+      this.cancelCreate();
+    }, 150);
+  }
+
   renameItem(): void {
     const file = this.contextMenu().file;
     if (file) {
       // TODO: Implement rename
-      console.log('Rename:', file.path);
     }
     this.closeContextMenu();
   }
@@ -193,6 +291,8 @@ export class FileTreeComponent {
     }
     this.closeContextMenu();
   }
+
+  // --- Icons ---
 
   getFileIcon(fileName: string): string {
     if (fileName.endsWith('.md')) return 'description';

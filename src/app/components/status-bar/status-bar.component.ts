@@ -5,11 +5,11 @@ import { ProjectStateService } from '../../services/project-state.service';
   selector: 'app-status-bar',
   standalone: true,
   template: `
-    <div class="flex items-center justify-between h-[22px] bg-[#007acc] px-2 text-white text-xs select-none">
+    <div class="flex items-center justify-between h-[22px] bg-[#1e1e1e] border-t border-[#3c3c3c] px-2 text-[#cccccc] text-xs select-none">
       <!-- Left section -->
       <div class="flex items-center gap-3">
         @if (projectState.currentFolderPath()) {
-          <span class="flex items-center gap-1 cursor-default">
+          <span class="flex items-center gap-1 cursor-default hover:text-white transition-colors">
             <span class="material-icons text-sm">folder</span>
             {{ projectState.projectName() }}
           </span>
@@ -17,7 +17,7 @@ import { ProjectStateService } from '../../services/project-state.service';
         
         @if (projectState.activeFile(); as file) {
           <span class="flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full" [class.bg-green-300]="!file.isDirty" [class.bg-yellow-300]="file.isDirty"></span>
+            <span class="w-2 h-2 rounded-full" [class.bg-green-400]="!file.isDirty" [class.bg-yellow-400]="file.isDirty"></span>
             {{ file.isDirty ? 'Modified' : 'Saved' }}
           </span>
         }
@@ -26,10 +26,10 @@ import { ProjectStateService } from '../../services/project-state.service';
       <!-- Right section -->
       <div class="flex items-center gap-4">
         @if (projectState.activeFile(); as file) {
-          <span>{{ getWordCount(file.content) }} words</span>
-          <span>{{ file.content.length }} chars</span>
+          <span>{{ getWordCount(file.content) }} <strong>Words</strong></span>
+          <span>{{ getCharCount(file.content) }} <strong>Chars</strong></span>
         }
-        <span>Tales IDE v0.1.0</span>
+        <span class="opacity-70">Tales IDE v0.1.0</span>
       </div>
     </div>
   `
@@ -42,5 +42,14 @@ export class StatusBarComponent {
     const text = content.replace(/<[^>]*>/g, ' ');
     const words = text.trim().split(/\s+/).filter(w => w.length > 0);
     return words.length;
+  }
+
+  getCharCount(content: string): number {
+    if (!content) return 0;
+    // Strip HTML tags and count logic
+    // ReadAWrite often counts non-whitespace characters for payment/stats,
+    // but standard editors might include spaces. Let's include everything visible (strip tags).
+    const text = content.replace(/<[^>]*>/g, '');
+    return text.length;
   }
 }

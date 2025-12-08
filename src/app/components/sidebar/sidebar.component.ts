@@ -8,7 +8,7 @@ import { FileTreeComponent } from '../file-tree/file-tree.component';
   standalone: true,
   imports: [FileTreeComponent, FormsModule],
   template: `
-    <div class="flex flex-col h-full bg-[#252526] border-r border-[#3c3c3c]">
+    <div class="flex flex-col h-full bg-[#252526] border-r border-[#3c3c3c]" (contextmenu)="onContextMenu($event)">
       <!-- Header -->
       <div class="flex items-center justify-between px-4 py-2 text-[11px] font-medium text-[#bbbbbb] tracking-wide uppercase">
         <span>Explorer</span>
@@ -96,6 +96,31 @@ import { FileTreeComponent } from '../file-tree/file-tree.component';
         </div>
       }
     </div>
+    
+    <!-- Context Menu for Root -->
+    @if (contextMenu().visible) {
+      <div 
+        class="fixed bg-[#252526] border border-[#454545] shadow-lg z-[1000] py-1 min-w-[160px]"
+        [style.left.px]="contextMenu().x"
+        [style.top.px]="contextMenu().y"
+        (click)="$event.stopPropagation()"
+      >
+        <button 
+          class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
+          (click)="startNewFile($event); contextMenu().visible = false"
+        >
+          <span class="material-icons text-base">note_add</span>
+          New File
+        </button>
+        <button 
+          class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
+          (click)="startNewFolder($event); contextMenu().visible = false"
+        >
+          <span class="material-icons text-base">create_new_folder</span>
+          New Folder
+        </button>
+      </div>
+    }
   `
 })
 export class SidebarComponent {
@@ -106,6 +131,9 @@ export class SidebarComponent {
   creatingType = signal<'file' | 'folder'>('file');
   newItemName = '';
 
+  // Context Menu State
+  contextMenu = signal<{ visible: boolean, x: number, y: number }>({ visible: false, x: 0, y: 0 });
+
   constructor() {
     // Listen for creation events
     document.addEventListener('newFile', ((e: Event) => {
@@ -115,6 +143,22 @@ export class SidebarComponent {
     document.addEventListener('newFolder', ((e: Event) => {
       this.startNewFolder(e);
     }) as EventListener);
+
+    // Close context menu on click elsewhere
+    document.addEventListener('click', () => {
+      this.contextMenu.set({ visible: false, x: 0, y: 0 });
+    });
+  }
+
+  onContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+    if (!this.projectState.currentFolderPath()) return;
+
+    this.contextMenu.set({
+      visible: true,
+      x: event.clientX,
+      y: event.clientY
+    });
   }
 
   toggleProjectExpanded(): void {

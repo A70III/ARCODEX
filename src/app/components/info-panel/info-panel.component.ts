@@ -1,9 +1,11 @@
 import { Component, inject, computed } from '@angular/core';
 import { ProjectStateService } from '../../services/project-state.service';
+import { ShortcutsComponent } from './shortcuts.component';
 
 @Component({
   selector: 'app-info-panel',
   standalone: true,
+  imports: [ShortcutsComponent],
   template: `
     <div class="flex flex-col h-full bg-[#252526] border-l border-[#3c3c3c]">
       <!-- Header -->
@@ -56,27 +58,23 @@ import { ProjectStateService } from '../../services/project-state.service';
                 <span class="material-icons text-base text-[#858585]">format_list_numbered</span>
                 <div class="flex-1 min-w-0">
                   <div class="text-[#858585] text-xs mb-0.5">Character Count</div>
-                  <div class="text-[#cccccc]">{{ file.content.length }} characters</div>
+                  <div class="text-[#cccccc]">{{ getCharCount(file.content) }} characters</div>
                 </div>
               </div>
             </div>
             
             <!-- Keyboard Shortcuts -->
-            <div class="mt-6 pt-4 border-t border-[#3c3c3c]">
-              <div class="text-[#858585] text-xs mb-2 uppercase">Shortcuts</div>
-              <div class="space-y-1 text-sm">
-                <div class="flex items-center justify-between text-[#cccccc]">
-                  <span>Save</span>
-                  <kbd class="px-1.5 py-0.5 bg-[#3c3c3c] rounded text-xs">Ctrl+S</kbd>
-                </div>
-              </div>
-            </div>
+            <app-shortcuts />
           </div>
         } @else {
           <!-- No file open -->
-          <div class="flex flex-col items-center justify-center h-full text-center text-[#6e6e6e]">
-            <span class="material-icons text-4xl mb-2">info</span>
+          <div class="flex flex-col items-center justify-center p-8 text-center text-[#6e6e6e]">
+            <span class="material-icons text-4xl mb-2 opacity-50">info</span>
             <p class="text-sm">Open a file to see document info</p>
+          </div>
+          
+          <div class="px-4 pb-4 mt-auto">
+             <app-shortcuts />
           </div>
         }
       </div>
@@ -102,5 +100,12 @@ export class InfoPanelComponent {
     const text = content.replace(/<[^>]*>/g, ' ');
     const words = text.trim().split(/\s+/).filter(w => w.length > 0);
     return words.length;
+  }
+
+  getCharCount(content: string): number {
+    if (!content) return 0;
+    // Strip HTML tags and newlines for accurate char count (ReadAWrite style usually counts visible chars)
+    const text = content.replace(/<[^>]*>/g, '').replace(/\s/g, ''); 
+    return text.length;
   }
 }

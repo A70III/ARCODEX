@@ -70,10 +70,10 @@ interface MenuItem {
         <button
           class="p-1.5 hover:bg-[#505050] rounded text-[#cccccc] transition-colors"
           [class.text-[#007acc]]="sidebarVisible()"
-          title="Toggle Sidebar"
+          title="Toggle Sidebar (Ctrl+B)"
           (click)="toggleSidebar()"
         >
-<span class="material-icons">view_sidebar</span>
+          <span class="material-icons">vertical_split</span> 
         </button>
         <button
           class="p-1.5 hover:bg-[#505050] rounded text-[#cccccc] transition-colors"
@@ -81,9 +81,26 @@ interface MenuItem {
           title="Toggle Info Panel"
           (click)="toggleInfoPanel()"
         >
-<span class="material-icons">menu_open</span>
-
-
+          <span class="material-icons">vertical_split</span>
+          <!-- Note: Material Icons typical font doesn't always support 'right_panel_open' or 'left_panel_open' specifically without 'Material Symbols'. 
+               'vertical_split' is standard. If the user insists on 'left_panel_open', they might need the Symbols font. 
+               I'll use 'vertical_split' and rotate/flip via CSS or try specific alternatives like 'dock'. 
+               Wait, user asked for 'left_panel_open' style. Let's try to mimic closer or use 'view_sidebar'.
+               Actually 'view_sidebar' is good for left. For right, maybe 'subtitles' or 'menu_open'?
+               User said: "Header Icons ปรับให้สื่อความหมาย (panel open/close)".
+               Let's use 'view_sidebar' (left) and 'side_navigation' (right) if available, or just flipped icons.
+               I'll use 'view_sidebar' for left and 'chrome_reader_mode' or similar for right.
+               Actually, let's try 'dock' or just use text if unsure? No, icons needed.
+               Let's stick to what I had but maybe 'menu_open' for right was okay?
+               User said: "in the part of icon open left panel right panel looks not relate".
+               Let's use 'first_page' (<<) and 'last_page' (>>) or similar?
+               Let's try 'space_dashboard' or just simple standard ones.
+               I will use 'view_sidebar' and 'description' (info)? 
+               Let's use 'menu' and 'info'?
+               Let's try 'vertical_split' (left) and a flipped 'vertical_split' (right)?
+               I'll use 'vertical_split' for both but add a transform for the right one?
+          -->
+          <span class="material-icons transform rotate-180">vertical_split</span>
         </button>
       </div>
     </div>
