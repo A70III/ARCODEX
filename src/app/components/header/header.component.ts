@@ -1,5 +1,7 @@
 import { Component, inject, signal, HostListener } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ProjectStateService } from '../../services/project-state.service';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface MenuItem {
   label: string;
@@ -12,96 +14,94 @@ interface MenuItem {
 @Component({
   selector: 'app-header',
   standalone: true,
+  imports: [CommonModule],
   template: `
-    <div class="flex items-center h-[30px] bg-[#3c3c3c] border-b border-[#3c3c3c] select-none">
-      <!-- Left side: App icon + Menus -->
-      <div class="flex items-center h-full">
-        <!-- App Icon -->
-        <div class="flex items-center justify-center w-[46px] h-full">
-          <span class="material-icons text-lg text-[#cccccc]">auto_stories</span>
+    <div data-tauri-drag-region class="flex items-center justify-between h-[35px] bg-[#3c3c3c] px-2 select-none">
+      <!-- Left: Logo & Menus -->
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 mr-2 pointer-events-none">
+          <span class="material-icons text-[#007acc]">auto_stories</span>
+          <span class="text-sm font-semibold text-[#cccccc] tracking-wide">Tales IDE</span>
         </div>
         
-        <!-- Menu items -->
-        @for (menu of menus; track menu.label) {
-          <div class="relative">
-            <button
-              class="px-3 h-[30px] text-[13px] text-[#cccccc] hover:bg-[#505050] transition-colors"
-              [class.bg-[#505050]]="openMenu() === menu.label"
-              (click)="toggleMenu(menu.label)"
-            >
-              {{ menu.label }}
-            </button>
-            
-            <!-- Dropdown -->
-            @if (openMenu() === menu.label) {
-              <div class="absolute top-full left-0 min-w-[200px] bg-[#252526] border border-[#454545] shadow-lg z-50 py-1">
-                @for (item of menu.items; track item.label) {
-                  @if (item.divider) {
-                    <div class="h-px bg-[#454545] my-1"></div>
-                  } @else {
-                    <button
-                      class="w-full flex items-center justify-between px-4 py-1.5 text-[13px] text-[#cccccc] hover:bg-[#094771] disabled:opacity-50 disabled:hover:bg-transparent"
-                      [disabled]="item.disabled"
-                      (click)="executeMenuItem(item)"
-                    >
-                      <span>{{ item.label }}</span>
-                      @if (item.shortcut) {
-                        <span class="text-[#858585] text-xs ml-4">{{ item.shortcut }}</span>
-                      }
-                    </button>
-                  }
-                }
+        <!-- Menus -->
+        <div class="flex items-center">
+          <div class="relative group">
+            <button class="px-2 py-1 text-xs text-[#cccccc] hover:bg-[#505050] rounded" (click)="toggleMenu('file', $event)">File</button>
+            @if (activeMenu() === 'file') {
+              <div class="absolute top-full left-0 mt-1 w-48 bg-[#252526] border border-[#454545] shadow-lg rounded py-1 z-50">
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="triggerNewFile()">New File <span class="float-right text-[#858585]">Ctrl+N</span></button>
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="triggerNewFolder()">New Folder <span class="float-right text-[#858585]">Ctrl+Shift+N</span></button>
+                <div class="h-px bg-[#454545] my-1"></div>
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="openProject()">Open Folder... <span class="float-right text-[#858585]">Ctrl+O</span></button>
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="closeProject()">Close Folder</button>
+                <div class="h-px bg-[#454545] my-1"></div>
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="saveActiveFile()">Save <span class="float-right text-[#858585]">Ctrl+S</span></button>
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="closeFile()">Close File <span class="float-right text-[#858585]">Ctrl+W</span></button>
               </div>
             }
           </div>
-        }
+          
+          <div class="relative group">
+            <button class="px-2 py-1 text-xs text-[#cccccc] hover:bg-[#505050] rounded" (click)="toggleMenu('edit', $event)">Edit</button>
+            @if (activeMenu() === 'edit') {
+              <div class="absolute top-full left-0 mt-1 w-48 bg-[#252526] border border-[#454545] shadow-lg rounded py-1 z-50">
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="triggerEdit('Undo')">Undo <span class="float-right text-[#858585]">Ctrl+Z</span></button>
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="triggerEdit('Redo')">Redo <span class="float-right text-[#858585]">Ctrl+Y</span></button>
+                <div class="h-px bg-[#454545] my-1"></div>
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="triggerEdit('Cut')">Cut <span class="float-right text-[#858585]">Ctrl+X</span></button>
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="triggerEdit('Copy')">Copy <span class="float-right text-[#858585]">Ctrl+C</span></button>
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="triggerEdit('Paste')">Paste <span class="float-right text-[#858585]">Ctrl+V</span></button>
+              </div>
+            }
+          </div>
+
+          <div class="relative group">
+            <button class="px-2 py-1 text-xs text-[#cccccc] hover:bg-[#505050] rounded" (click)="toggleMenu('view', $event)">View</button>
+            @if (activeMenu() === 'view') {
+              <div class="absolute top-full left-0 mt-1 w-48 bg-[#252526] border border-[#454545] shadow-lg rounded py-1 z-50">
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="toggleSidebar()">Toggle Sidebar <span class="float-right text-[#858585]">Ctrl+B</span></button>
+                <button class="w-full text-left px-4 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771]" (click)="toggleInfoPanel()">Toggle Info Panel</button>
+              </div>
+            }
+          </div>
+        </div>
       </div>
       
-      <!-- Center: Window title -->
-      <div class="flex-1 text-center text-[13px] text-[#cccccc] truncate px-4">
-        Tales IDE
-        @if (projectState.projectName()) {
-          <span class="text-[#858585]"> - {{ projectState.projectName() }}</span>
-        }
-      </div>
-      
-      <!-- Right side: Toggle buttons -->
-      <div class="flex items-center h-full pr-2">
-        <button
-          class="p-1.5 hover:bg-[#505050] rounded text-[#cccccc] transition-colors"
-          [class.text-[#007acc]]="sidebarVisible()"
-          title="Toggle Sidebar (Ctrl+B)"
-          (click)="toggleSidebar()"
-        >
-          <span class="material-icons">vertical_split</span> 
-        </button>
-        <button
-          class="p-1.5 hover:bg-[#505050] rounded text-[#cccccc] transition-colors"
-          [class.text-[#007acc]]="infoPanelVisible()"
-          title="Toggle Info Panel"
-          (click)="toggleInfoPanel()"
-        >
-          <span class="material-icons">vertical_split</span>
-          <!-- Note: Material Icons typical font doesn't always support 'right_panel_open' or 'left_panel_open' specifically without 'Material Symbols'. 
-               'vertical_split' is standard. If the user insists on 'left_panel_open', they might need the Symbols font. 
-               I'll use 'vertical_split' and rotate/flip via CSS or try specific alternatives like 'dock'. 
-               Wait, user asked for 'left_panel_open' style. Let's try to mimic closer or use 'view_sidebar'.
-               Actually 'view_sidebar' is good for left. For right, maybe 'subtitles' or 'menu_open'?
-               User said: "Header Icons ปรับให้สื่อความหมาย (panel open/close)".
-               Let's use 'view_sidebar' (left) and 'side_navigation' (right) if available, or just flipped icons.
-               I'll use 'view_sidebar' for left and 'chrome_reader_mode' or similar for right.
-               Actually, let's try 'dock' or just use text if unsure? No, icons needed.
-               Let's stick to what I had but maybe 'menu_open' for right was okay?
-               User said: "in the part of icon open left panel right panel looks not relate".
-               Let's use 'first_page' (<<) and 'last_page' (>>) or similar?
-               Let's try 'space_dashboard' or just simple standard ones.
-               I will use 'view_sidebar' and 'description' (info)? 
-               Let's use 'menu' and 'info'?
-               Let's try 'vertical_split' (left) and a flipped 'vertical_split' (right)?
-               I'll use 'vertical_split' for both but add a transform for the right one?
-          -->
-          <span class="material-icons transform rotate-180">vertical_split</span>
-        </button>
+      <!-- Right: Toggles -->
+      <div class="flex items-center gap-4">
+        <!-- Panel Toggles -->
+        <div class="flex items-center gap-1">
+            <button
+            class="p-1.5 hover:bg-[#505050] rounded text-[#cccccc] transition-colors"
+            [class.text-[#007acc]]="sidebarVisible()"
+            title="Toggle Sidebar (Ctrl+B)"
+            (click)="toggleSidebar()"
+            >
+            <span class="material-icons text-lg">vertical_split</span> 
+            </button>
+            <button
+            class="p-1.5 hover:bg-[#505050] rounded text-[#cccccc] transition-colors"
+            [class.text-[#007acc]]="infoPanelVisible()"
+            title="Toggle Info Panel"
+            (click)="toggleInfoPanel()"
+            >
+            <span class="material-icons text-lg transform rotate-180">vertical_split</span>
+            </button>
+        </div>
+
+        <!-- Window Controls -->
+        <div class="flex items-center h-full">
+            <button class="p-2 hover:bg-[#505050] text-[#cccccc] transition-colors h-full flex items-center justify-center w-[46px]" (click)="minimizeWindow()">
+                <span class="material-icons text-base">remove</span>
+            </button>
+            <button class="p-2 hover:bg-[#505050] text-[#cccccc] transition-colors h-full flex items-center justify-center w-[46px]" (click)="toggleMaximizeWindow()">
+                <span class="material-icons text-base">crop_square</span>
+            </button>
+            <button class="p-2 hover:bg-[#e81123] hover:text-white text-[#cccccc] transition-colors h-full flex items-center justify-center w-[46px]" (click)="closeWindow()">
+                <span class="material-icons text-base">close</span>
+            </button>
+        </div>
       </div>
     </div>
   `
@@ -109,70 +109,34 @@ interface MenuItem {
 export class HeaderComponent {
   projectState = inject(ProjectStateService);
   
-  openMenu = signal<string | null>(null);
+  activeMenu = signal<string | null>(null);
   sidebarVisible = signal(true);
   infoPanelVisible = signal(true);
-
-  menus = [
-    {
-      label: 'File',
-      items: [
-        { label: 'New File', shortcut: 'Ctrl+N', action: () => this.newFile() },
-        { label: 'New Folder', shortcut: 'Ctrl+Shift+N', action: () => this.newFolder() },
-        { divider: true, label: '' },
-        { label: 'Open Folder...', shortcut: 'Ctrl+O', action: () => this.openFolder() },
-        { divider: true, label: '' },
-        { label: 'Save', shortcut: 'Ctrl+S', action: () => this.save() },
-        { divider: true, label: '' },
-        { label: 'Close File', shortcut: 'Ctrl+W', action: () => this.closeFile() },
-      ] as MenuItem[]
-    },
-    {
-      label: 'Edit',
-      items: [
-        { label: 'Undo', shortcut: 'Ctrl+Z', action: () => this.triggerEdit('Undo') },
-        { label: 'Redo', shortcut: 'Ctrl+Y', action: () => this.triggerEdit('Redo') },
-        { divider: true, label: '' },
-        { label: 'Cut', shortcut: 'Ctrl+X', action: () => this.triggerEdit('Cut') },
-        { label: 'Copy', shortcut: 'Ctrl+C', action: () => this.triggerEdit('Copy') },
-        { label: 'Paste', shortcut: 'Ctrl+V', action: () => this.triggerEdit('Paste') },
-      ] as MenuItem[]
-    },
-    {
-      label: 'View',
-      items: [
-        { label: 'Toggle Sidebar', shortcut: 'Ctrl+B', action: () => this.toggleSidebar() },
-        { label: 'Toggle Info Panel', action: () => this.toggleInfoPanel() },
-      ] as MenuItem[]
-    }
-  ];
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     if (!target.closest('app-header')) {
-      this.openMenu.set(null);
+      this.activeMenu.set(null);
     }
   }
 
-  toggleMenu(label: string): void {
-    if (this.openMenu() === label) {
-      this.openMenu.set(null);
+  toggleMenu(label: string, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.activeMenu() === label) {
+      this.activeMenu.set(null);
     } else {
-      this.openMenu.set(label);
+      this.activeMenu.set(label);
     }
   }
 
-  executeMenuItem(item: MenuItem): void {
-    this.openMenu.set(null);
-    if (item.action) {
-      item.action();
-    }
+  executeMenuItem(action: () => void): void {
+    this.activeMenu.set(null);
+    action();
   }
 
   toggleSidebar(): void {
     this.sidebarVisible.update(v => !v);
-    // Emit event for layout to handle
     document.dispatchEvent(new CustomEvent('toggleSidebar', { detail: this.sidebarVisible() }));
   }
 
@@ -181,23 +145,33 @@ export class HeaderComponent {
     document.dispatchEvent(new CustomEvent('toggleInfoPanel', { detail: this.infoPanelVisible() }));
   }
 
-  newFile(): void {
+  triggerNewFile(): void {
+    this.activeMenu.set(null);
     this.projectState.triggerNewFile();
   }
 
-  newFolder(): void {
+  triggerNewFolder(): void {
+    this.activeMenu.set(null);
     this.projectState.triggerNewFolder();
   }
 
-  openFolder(): void {
+  openProject(): void {
+    this.activeMenu.set(null);
     this.projectState.openProject();
   }
 
-  save(): void {
+  closeProject(): void {
+      this.activeMenu.set(null);
+      this.projectState.closeProject();
+  }
+
+  saveActiveFile(): void {
+    this.activeMenu.set(null);
     this.projectState.saveActiveFile();
   }
 
   closeFile(): void {
+    this.activeMenu.set(null);
     const activePath = this.projectState.activeFilePath();
     if (activePath) {
       this.projectState.closeFile(activePath);
@@ -205,6 +179,19 @@ export class HeaderComponent {
   }
 
   triggerEdit(action: string): void {
+    this.activeMenu.set(null);
     this.projectState.triggerEditAction(action);
+  }
+
+  minimizeWindow(): void {
+    getCurrentWindow().minimize();
+  }
+
+  toggleMaximizeWindow(): void {
+    getCurrentWindow().toggleMaximize();
+  }
+
+  closeWindow(): void {
+    getCurrentWindow().close();
   }
 }

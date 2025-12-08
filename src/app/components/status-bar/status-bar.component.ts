@@ -1,9 +1,11 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { ProjectStateService } from '../../services/project-state.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-status-bar',
   standalone: true,
+  imports: [CommonModule],
   template: `
     <div class="flex items-center justify-between h-[22px] bg-[#1e1e1e] border-t border-[#3c3c3c] px-2 text-[#cccccc] text-xs select-none">
       <!-- Left section -->
@@ -39,17 +41,32 @@ export class StatusBarComponent {
 
   getWordCount(content: string): number {
     if (!content) return 0;
-    const text = content.replace(/<[^>]*>/g, ' ');
-    const words = text.trim().split(/\s+/).filter(w => w.length > 0);
-    return words.length;
+    const text = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!text) return 0;
+
+    try {
+      // @ts-ignore
+      if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+        // @ts-ignore
+        const segmenter = new Intl.Segmenter('th', { granularity: 'word' });
+        let count = 0;
+        // @ts-ignore
+        for (const segment of segmenter.segment(text)) {
+          if (segment.isWordLike) {
+            count++;
+          }
+        }
+        return count;
+      }
+    } catch (e) {
+      // Fallback
+    }
+    return text.split(/\s+/).filter(w => w.length > 0).length;
   }
 
   getCharCount(content: string): number {
     if (!content) return 0;
-    // Strip HTML tags and count logic
-    // ReadAWrite often counts non-whitespace characters for payment/stats,
-    // but standard editors might include spaces. Let's include everything visible (strip tags).
-    const text = content.replace(/<[^>]*>/g, '');
+    const text = content.replace(/<[^>]*>/g, '').replace(/\s/g, '');
     return text.length;
   }
 }

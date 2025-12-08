@@ -48,13 +48,25 @@ export class ProjectStateService {
   }
 
   /**
-   * Refresh file tree from current folder
+   * Close the current project
+   */
+  closeProject(): void {
+    this._currentFolderPath.set('');
+    this._fileTree.set(null);
+    this._openedFiles.set([]);
+    this._activeFilePath.set('');
+  }
+
+  /**
+   * Helper to ensure tree is refreshed after file operations
    */
   async refreshFileTree(): Promise<void> {
     const path = this._currentFolderPath();
     if (!path) return;
 
     try {
+      // Small delay to ensure fs operation completes (sometimes needed on Windows)
+      await new Promise(resolve => setTimeout(resolve, 100));
       const tree = await invoke<FileNode>('read_project_dir', { path });
       this._fileTree.set(tree);
     } catch (error) {

@@ -1,11 +1,12 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { ProjectStateService } from '../../services/project-state.service';
 import { ShortcutsComponent } from './shortcuts.component';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-info-panel',
   standalone: true,
-  imports: [ShortcutsComponent],
+  imports: [ShortcutsComponent, CommonModule],
   template: `
     <div class="flex flex-col h-full bg-[#252526] border-l border-[#3c3c3c]">
       <!-- Header -->
@@ -96,16 +97,32 @@ export class InfoPanelComponent {
 
   getWordCount(content: string): number {
     if (!content) return 0;
-    // Strip HTML tags for word count
-    const text = content.replace(/<[^>]*>/g, ' ');
-    const words = text.trim().split(/\s+/).filter(w => w.length > 0);
-    return words.length;
+    const text = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!text) return 0;
+
+    try {
+      // @ts-ignore
+      if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+        // @ts-ignore
+        const segmenter = new Intl.Segmenter('th', { granularity: 'word' });
+        let count = 0;
+        // @ts-ignore
+        for (const segment of segmenter.segment(text)) {
+          if (segment.isWordLike) {
+            count++;
+          }
+        }
+        return count;
+      }
+    } catch (e) {
+      // Fallback
+    }
+    return text.split(/\s+/).filter(w => w.length > 0).length;
   }
 
   getCharCount(content: string): number {
     if (!content) return 0;
-    // Strip HTML tags and newlines for accurate char count (ReadAWrite style usually counts visible chars)
-    const text = content.replace(/<[^>]*>/g, '').replace(/\s/g, ''); 
+    const text = content.replace(/<[^>]*>/g, '').replace(/\s/g, '');
     return text.length;
   }
 }

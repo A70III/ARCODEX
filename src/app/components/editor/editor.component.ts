@@ -137,7 +137,7 @@ import { WelcomeComponent } from '../welcome/welcome.component';
       }
       
       <!-- Editor area -->
-      <div class="flex-1 overflow-auto">
+      <div class="flex-1 overflow-auto" (keydown)="onKeyDown($event)">
         @if (projectState.activeFile()) {
           <div class="h-full p-6 max-w-4xl mx-auto">
             <div #editorContainer class="editor-container h-full"></div>
