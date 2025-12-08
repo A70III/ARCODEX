@@ -216,10 +216,52 @@ export class ProjectStateService {
     }
   }
 
+  // Confirmation State
+  readonly confirmationState = signal<{ title: string; message: string; onConfirm: () => void } | null>(null);
+
   /**
-   * Delete a file or folder
+   * Rename item
    */
-  async deleteFile(filePath: string): Promise<void> {
+  async renameItem(oldPath: string, newPath: string): Promise<void> {
+    try {
+      if (oldPath === newPath) return;
+      await invoke('rename_item', { oldPath, newPath });
+      
+      // If active file was renamed, update its path in state
+      const active = this.activeFile();
+      if (active && active.path === oldPath) {
+        this.closeFile(oldPath);
+        await this.openFile(newPath); // Re-open with new path
+      }
+      
+      await this.refreshFileTree();
+    } catch (error) {
+      console.error('Failed to rename item:', error);
+    }
+  }
+
+  /**
+   * Request delete with confirmation
+   */
+  requestDelete(path: string): void {
+    this.confirmationState.set({
+      title: 'Delete Item',
+      message: `Are you sure you want to delete '${path.split('/').pop()}'?`,
+      onConfirm: () => {
+        this.deleteFile(path);
+        this.confirmationState.set(null);
+      }
+    });
+  }
+
+  cancelDelete(): void {
+    this.confirmationState.set(null);
+  }
+
+  /**
+   * Delete a file or folder (Internal)
+   */
+  private async deleteFile(filePath: string): Promise<void> {
     try {
       await invoke('delete_file', { path: filePath });
       this.closeFile(filePath);

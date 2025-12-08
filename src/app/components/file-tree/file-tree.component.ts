@@ -1,5 +1,5 @@
 import { Component, Input, inject, signal, forwardRef, HostListener, ElementRef, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common'; // Use CommonModule instead of explicit creating types usage if needed, but standalone imports works
+import { CommonModule } from '@angular/common'; 
 import { FormsModule } from '@angular/forms';
 import { FileNode } from '../../models/file-node.model';
 import { ProjectStateService } from '../../services/project-state.service';
@@ -14,7 +14,7 @@ interface ContextMenuState {
 @Component({
   selector: 'app-file-tree',
   standalone: true,
-  imports: [forwardRef(() => FileTreeComponent), FormsModule],
+  imports: [CommonModule, FormsModule, forwardRef(() => FileTreeComponent)],
   template: `
     @for (child of sortedChildren(); track child.path) {
       <div class="select-none group">
@@ -32,7 +32,7 @@ interface ContextMenuState {
             <span class="material-icons text-base text-[#dcb67a]">
               {{ isExpanded(child.path) ? 'folder_open' : 'folder' }}
             </span>
-            <span class="text-sm truncate">{{ child.name }}</span>
+            <span class="text-sm truncate select-none pointer-events-none">{{ child.name }}</span>
           </div>
           
           @if (isExpanded(child.path)) {
@@ -63,8 +63,8 @@ interface ContextMenuState {
         } @else {
           <!-- File -->
           <div 
-            class="flex items-center gap-1 py-0.5 px-1 cursor-pointer hover:bg-[#2a2d2e] rounded-sm"
-            [class.bg-[#094771]]="isActive(child.path)"
+            class="flex items-center gap-1 py-0.5 px-1 cursor-pointer hover:bg-[#2a2d2e] rounded-sm group/file"
+            [class.bg-[#094771]]="isActive(child.path) && renamingNode()?.path !== child.path"
             [style.padding-left.px]="depth * 12 + 20"
             (click)="onFileClick(child)"
             (contextmenu)="onContextMenu($event, child)"
@@ -72,7 +72,21 @@ interface ContextMenuState {
             <span class="material-icons text-base" [class]="getFileIconClass(child.name)">
               {{ getFileIcon(child.name) }}
             </span>
-            <span class="text-sm truncate text-[#cccccc]" [class.text-white]="isActive(child.path)">{{ child.name }}</span>
+            
+            @if (renamingNode()?.path === child.path) {
+                <input
+                #renameInput
+                type="text"
+                class="flex-1 bg-[#3c3c3c] border border-[#007acc] text-[#cccccc] text-sm px-1 py-0 rounded outline-none min-w-[50px] h-[20px]"
+                [(ngModel)]="renamingNode()!.name"
+                (keydown.enter)="confirmRename()"
+                (keydown.escape)="cancelRename()"
+                (blur)="confirmRename()"
+                (click)="$event.stopPropagation()"
+                />
+            } @else {
+                <span class="text-sm truncate text-[#cccccc]" [class.text-white]="isActive(child.path)">{{ child.name }}</span>
+            }
           </div>
         }
       </div>
@@ -81,50 +95,50 @@ interface ContextMenuState {
     <!-- Context Menu -->
     @if (contextMenu().visible) {
       <div 
-        class="fixed bg-[#252526] border border-[#454545] shadow-lg z-[1000] py-1 min-w-[160px]"
+        class="fixed bg-[#252526] border border-[#454545] shadow-[0_4px_10px_rgba(0,0,0,0.5)] z-[9999] py-1 min-w-[160px] rounded-sm"
         [style.left.px]="contextMenu().x"
         [style.top.px]="contextMenu().y"
         (click)="$event.stopPropagation()"
       >
         @if (contextMenu().file?.is_dir) {
           <button 
-            class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
+            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771] text-left transition-colors"
             (click)="startCreate('file')"
           >
-            <span class="material-icons text-base">note_add</span>
+            <span class="material-icons text-sm">note_add</span>
             New File
           </button>
           <button 
-            class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
+            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771] text-left transition-colors"
             (click)="startCreate('folder')"
           >
-            <span class="material-icons text-base">create_new_folder</span>
+            <span class="material-icons text-sm">create_new_folder</span>
             New Folder
           </button>
           <div class="h-px bg-[#454545] my-1"></div>
         } @else {
           <button 
-            class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
+            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771] text-left transition-colors"
             (click)="openFile()"
           >
-            <span class="material-icons text-base">open_in_new</span>
+            <span class="material-icons text-sm">open_in_new</span>
             Open
           </button>
         }
         
         <button 
-          class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
-          (click)="renameItem()"
+          class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771] text-left transition-colors"
+          (click)="startRename()"
         >
-          <span class="material-icons text-base">edit</span>
+          <span class="material-icons text-sm">edit</span>
           Rename
         </button>
         <div class="h-px bg-[#454545] my-1"></div>
         <button 
-          class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#f48771] hover:bg-[#5a1d1d] text-left"
-          (click)="deleteItem()"
+          class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#f48771] hover:bg-[#5a1d1d] text-left transition-colors"
+          (click)="handleDelete()"
         >
-          <span class="material-icons text-base">delete</span>
+          <span class="material-icons text-sm">delete</span>
           Delete
         </button>
       </div>
@@ -141,6 +155,12 @@ export class FileTreeComponent {
   // Creation state
   newItemName = '';
   creatingChildState = signal<{ parentId: string | null, type: 'file' | 'folder' }>({ parentId: null, type: 'file' });
+  
+  @ViewChild('newItemInput') newItemInput?: ElementRef<HTMLInputElement>;
+
+  // Renaming State
+  renamingNode = signal<{ path: string; name: string } | null>(null);
+  @ViewChild('renameInput') renameInput?: ElementRef<HTMLInputElement>;
 
   contextMenu = signal<ContextMenuState>({
     visible: false,
@@ -234,12 +254,14 @@ export class FileTreeComponent {
       this.creatingChildState.set({ parentId: parentFile.path, type });
       this.newItemName = '';
       
-      // Auto-focus logic would go here (need ViewChild for list of inputs?)
-      // Simple timeout for now since we're using *ngIf (well, @if)
       setTimeout(() => {
-        const inputs = document.querySelectorAll('input[type="text"]');
-        const lastInput = inputs[inputs.length - 1] as HTMLInputElement;
-        lastInput?.focus();
+        if (this.newItemInput) {
+            this.newItemInput.nativeElement.focus();
+        } else {
+             // Fallback if viewchild update is slow
+             const inputs = document.querySelectorAll('input[type="text"]');
+             if(inputs.length) (inputs[inputs.length - 1] as HTMLElement).focus();
+        }
       }, 50);
     }
     this.closeContextMenu();
@@ -269,27 +291,58 @@ export class FileTreeComponent {
   }
 
   onInputBlur(): void {
+    // Small delay to allow enter key to trigger first
     setTimeout(() => {
       this.cancelCreate();
     }, 150);
   }
 
-  renameItem(): void {
-    const file = this.contextMenu().file;
-    if (file) {
-      // TODO: Implement rename
+  startRename(): void {
+    const node = this.contextMenu().file;
+    if (node) {
+      this.renamingNode.set({ path: node.path, name: node.name });
+      this.closeContextMenu();
+      setTimeout(() => {
+         if (this.renameInput) {
+             this.renameInput.nativeElement.focus();
+             this.renameInput.nativeElement.select();
+         } else {
+             // Fallback
+             const inputs = document.querySelectorAll('input[type="text"]');
+             if(inputs.length) (inputs[inputs.length - 1] as HTMLInputElement).select();
+         }
+      }, 50);
     }
-    this.closeContextMenu();
   }
 
-  deleteItem(): void {
-    const file = this.contextMenu().file;
-    if (file) {
-      if (confirm(`Are you sure you want to delete "${file.name}"?`)) {
-        this.projectState.deleteFile(file.path);
-      }
+  confirmRename(): void {
+    const state = this.renamingNode();
+    if (!state) return;
+
+    if (state.name.trim() && state.name !== state.path.split('/').pop() && state.name !== state.path.split('\\').pop()) {
+       // Reconstruct new path roughly or let service handle it? 
+       // We know the old path. We need to replace the filename.
+       const separator = state.path.includes('\\') ? '\\' : '/';
+       const segments = state.path.split(separator);
+       segments.pop(); // Remove old name
+       segments.push(state.name);
+       const newPath = segments.join(separator);
+
+       this.projectState.renameItem(state.path, newPath);
     }
-    this.closeContextMenu();
+    this.renamingNode.set(null);
+  }
+
+  cancelRename(): void {
+    this.renamingNode.set(null);
+  }
+
+  handleDelete(): void {
+    const node = this.contextMenu().file;
+    if (node) {
+      this.projectState.requestDelete(node.path);
+      this.closeContextMenu();
+    }
   }
 
   // --- Icons ---

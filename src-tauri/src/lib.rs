@@ -68,7 +68,9 @@ fn read_project_dir(path: String) -> Result<FileNode, String> {
     
     // Build parent-child relationships
     let mut root_children: Vec<FileNode> = Vec::new();
-    let paths: Vec<String> = nodes.keys().cloned().collect();
+    let mut paths: Vec<String> = nodes.keys().cloned().collect();
+    // Sort paths by length descending to ensure we process children before parents
+    paths.sort_by(|a, b| b.len().cmp(&a.len()));
     
     for path_str in paths {
         let entry_path = Path::new(&path_str);
@@ -158,6 +160,12 @@ fn create_folder(path: String) -> Result<(), String> {
     fs::create_dir_all(&path).map_err(|e| format!("Failed to create folder: {}", e))
 }
 
+/// Command 7: Rename item
+#[tauri::command]
+fn rename_item(old_path: String, new_path: String) -> Result<(), String> {
+    fs::rename(&old_path, &new_path).map_err(|e| format!("Failed to rename item: {}", e))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -170,8 +178,10 @@ pub fn run() {
             read_file_content,
             save_file_content,
             save_file_content,
+            save_file_content,
             delete_file,
-            create_folder
+            create_folder,
+            rename_item
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
