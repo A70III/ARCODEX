@@ -1,13 +1,13 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "arc",
+  "productName": "Arc",
   "version": "1.0.0",
   "identifier": "com.l2s.arc",
   "build": {
     "beforeDevCommand": "npm run start",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist/arc/browser"
+    "frontendDist": "../dist/tales_ide/browser"
   },
   "app": {
     "windows": [
