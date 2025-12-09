@@ -1,6 +1,6 @@
 {
-  "name": "tales_ide",
-  "version": "0.1.0",
+  "name": "arc",
+  "version": "1.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

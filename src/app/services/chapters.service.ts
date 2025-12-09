@@ -2,7 +2,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { invoke } from '@tauri-apps/api/core';
 import { ProjectStateService } from './project-state.service';
 
-// Simplified chapter order item - only essential fields for cOrder.taleside
+// Simplified chapter order item - only essential fields for cOrder.arc
 export interface ChapterOrderItem {
   name: string;
   order: number;
@@ -24,7 +24,7 @@ export interface ChapterGroup {
   expanded: boolean;
 }
 
-// cOrder.taleside file structure
+// cOrder.arc file structure
 interface ChapterOrderConfig {
   version: string;
   chaptersOrder: ChapterOrderItem[];
@@ -73,7 +73,7 @@ export class ChaptersService {
   private getConfigPath(): string | null {
     const folderPath = this.projectState.currentFolderPath();
     if (!folderPath) return null;
-    return `${folderPath}/config.taleside`;
+    return `${folderPath}/config.arc`;
   }
 
   // Get chapters folder path
@@ -83,14 +83,14 @@ export class ChaptersService {
     return `${folderPath}/chapters`;
   }
 
-  // Get cOrder.taleside file path (in chapters folder)
+  // Get cOrder.arc file path (in chapters folder)
   private getOrderFilePath(): string | null {
     const chaptersPath = this.getChaptersFolderPath();
     if (!chaptersPath) return null;
-    return `${chaptersPath}/cOrder.taleside`;
+    return `${chaptersPath}/cOrder.arc`;
   }
 
-  // Validate config.taleside exists and has valid format
+  // Validate config.arc exists and has valid format
   async validateConfig(): Promise<boolean> {
     const configPath = this.getConfigPath();
     if (!configPath) {
@@ -106,7 +106,7 @@ export class ChaptersService {
       // Check required fields
       if (!config.version || !config.title) {
         this._configValid.set(false);
-        this._error.set('Invalid config.taleside format');
+        this._error.set('Invalid config.arc format');
         return false;
       }
 
@@ -115,12 +115,12 @@ export class ChaptersService {
       return true;
     } catch (e) {
       this._configValid.set(false);
-      this._error.set('config.taleside not found or invalid');
+      this._error.set('config.arc not found or invalid');
       return false;
     }
   }
 
-  // Load chapters from folder and cOrder.taleside
+  // Load chapters from folder and cOrder.arc
   async loadChapters(): Promise<void> {
     this._loading.set(true);
     this._error.set(null);
@@ -141,7 +141,7 @@ export class ChaptersService {
         return;
       }
 
-      // Read cOrder.taleside for ordering/grouping info
+      // Read cOrder.arc for ordering/grouping info
       let savedOrder: ChapterOrderItem[] = [];
       let savedGroups: ChapterGroup[] = [];
       
@@ -151,7 +151,7 @@ export class ChaptersService {
         savedOrder = orderConfig.chaptersOrder || [];
         savedGroups = orderConfig.chapterGroups || [];
       } catch (e) {
-        // cOrder.taleside doesn't exist yet, use defaults
+        // cOrder.arc doesn't exist yet, use defaults
       }
 
       // Read chapters folder
@@ -201,7 +201,7 @@ export class ChaptersService {
     }
   }
 
-  // Save chapters order and groups to cOrder.taleside
+  // Save chapters order and groups to cOrder.arc
   async saveOrderConfig(): Promise<void> {
     const orderFilePath = this.getOrderFilePath();
     const chaptersPath = this.getChaptersFolderPath();
@@ -222,7 +222,7 @@ export class ChaptersService {
         groupId: c.groupId
       }));
 
-      // Create cOrder.taleside content
+      // Create cOrder.arc content
       const orderConfig: ChapterOrderConfig = {
         version: '1.0',
         chaptersOrder,
@@ -232,7 +232,7 @@ export class ChaptersService {
       const content = JSON.stringify(orderConfig, null, 2);
       await invoke('save_file_content', { path: orderFilePath, content });
     } catch (e) {
-      console.error('Failed to save cOrder.taleside:', e);
+      console.error('Failed to save cOrder.arc:', e);
     }
   }
 

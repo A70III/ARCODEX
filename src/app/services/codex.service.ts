@@ -60,11 +60,11 @@ export class CodexService {
     return `${folderPath}/codex`;
   }
 
-  // Get config.taleside path
+  // Get config.arc path
   private getConfigPath(): string | null {
     const folderPath = this.projectState.currentFolderPath();
     if (!folderPath) return null;
-    return `${folderPath}/config.taleside`;
+    return `${folderPath}/config.arc`;
   }
 
   // Load codex folders and config
@@ -75,7 +75,7 @@ export class CodexService {
       // Load folders from /codex
       await this.loadCodexFolders();
       
-      // Load custom labels from config.taleside
+      // Load custom labels from config.arc
       await this.loadSubmenuConfig();
       
       // Load project info
@@ -114,7 +114,7 @@ export class CodexService {
     }
   }
 
-  // Load custom submenu labels from config.taleside
+  // Load custom submenu labels from config.arc
   private async loadSubmenuConfig(): Promise<void> {
     const configPath = this.getConfigPath();
     if (!configPath) return;
@@ -159,7 +159,7 @@ export class CodexService {
     this._activeTab.set(tab);
   }
 
-  // Create a new category folder and update config.taleside
+  // Create a new category folder and update config.arc
   async createCategory(folderName: string, displayName: string): Promise<boolean> {
     const codexPath = this.getCodexFolderPath();
     const configPath = this.getConfigPath();
@@ -174,7 +174,7 @@ export class CodexService {
       // Refresh file tree in the background
       this.projectState.refreshFileTree();
 
-      // Update config.taleside with new submenu entry
+      // Update config.arc with new submenu entry
       await this.addSubmenuEntry(folderName, displayName);
 
       // Reload codex to reflect changes
@@ -190,7 +190,7 @@ export class CodexService {
     }
   }
 
-  // Add submenu entry to config.taleside
+  // Add submenu entry to config.arc
   private async addSubmenuEntry(folderName: string, displayName: string): Promise<void> {
     const configPath = this.getConfigPath();
     if (!configPath) return;
@@ -220,11 +220,11 @@ export class CodexService {
       const newContent = JSON.stringify(config, null, 2);
       await invoke('save_file_content', { path: configPath, content: newContent });
     } catch (e) {
-      console.error('Failed to update config.taleside:', e);
+      console.error('Failed to update config.arc:', e);
     }
   }
 
-  // Load project info from config.taleside
+  // Load project info from config.arc
   private async loadProjectInfo(): Promise<void> {
     const configPath = this.getConfigPath();
     if (!configPath) return;
@@ -241,7 +241,7 @@ export class CodexService {
     }
   }
 
-  // Update project info in config.taleside
+  // Update project info in config.arc
   async updateProjectInfo(title: string, author: string, genre: string): Promise<boolean> {
     const configPath = this.getConfigPath();
     if (!configPath) return false;

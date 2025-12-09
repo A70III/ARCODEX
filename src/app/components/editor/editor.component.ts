@@ -766,7 +766,7 @@ export class EditorComponent implements OnDestroy {
   // --- Icons ---
 
   getFileIcon(fileName: string): string {
-    if (fileName.endsWith(".taleside")) return "auto_stories";
+    if (fileName.endsWith(".arc")) return "auto_stories";
     if (fileName.endsWith(".md")) return "description";
     if (fileName.endsWith(".txt")) return "article";
     if (fileName.endsWith(".json")) return "data_object";
@@ -774,7 +774,7 @@ export class EditorComponent implements OnDestroy {
   }
 
   getFileIconClass(fileName: string): string {
-    if (fileName.endsWith(".taleside")) return "text-[var(--accent)]";
+    if (fileName.endsWith(".arc")) return "text-[var(--accent)]";
     if (fileName.endsWith(".md")) return "text-[var(--info)]";
     if (fileName.endsWith(".txt")) return "text-[var(--text-secondary)]";
     if (fileName.endsWith(".json")) return "text-[var(--warning)]";

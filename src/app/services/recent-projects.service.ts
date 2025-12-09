@@ -67,7 +67,7 @@ export class RecentProjectsService {
 
     for (const path of paths) {
       try {
-        const configPath = `${path}/config.taleside`;
+        const configPath = `${path}/config.arc`;
         // We use the existing read_file_content command
         // Note: We need to handle the case where the file doesn't exist (legacy projects or deleted config)
         let config: ProjectConfig | null = null;

@@ -193,7 +193,7 @@ interface ShortcutItem {
               @case ('about') {
                 <div class="flex flex-col items-center justify-center h-full text-center">
                   <span class="material-icons text-7xl text-[var(--border-color)] mb-4">auto_stories</span>
-                  <h1 class="text-2xl font-semibold text-[var(--text-primary)] mb-2">Tales IDE</h1>
+                  <h1 class="text-2xl font-semibold text-[var(--text-primary)] mb-2">Arc</h1>
                   <p class="text-[var(--text-secondary)] mb-6">Your Creative Writing Companion</p>
                   
                   <div class="space-y-2 text-sm">

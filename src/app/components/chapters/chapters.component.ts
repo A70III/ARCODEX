@@ -93,7 +93,7 @@ import { ProjectStateService } from "../../services/project-state.service";
             {{ chaptersService.error() }}
           </p>
           <p class="text-[var(--text-muted)] text-xs mt-2">
-            โปรเจคนี้ไม่มีไฟล์ config.taleside ที่ถูกต้อง
+            โปรเจคนี้ไม่มีไฟล์ config.arc ที่ถูกต้อง
           </p>
         </div>
         } @else if (allChapters().length === 0) {

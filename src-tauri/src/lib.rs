@@ -202,8 +202,8 @@ fn create_new_project(base_path: String, config: ProjectConfig) -> Result<String
     fs::create_dir_all(&codex_path)
         .map_err(|e| format!("Failed to create codex folder: {}", e))?;
     
-    // Create config.taleside file
-    let config_file = project_path.join("config.taleside");
+    // Create config.arc file
+    let config_file = project_path.join("config.arc");
     let config_content = serde_json::json!({
         "version": "1.0",
         "title": config.title,
@@ -252,7 +252,7 @@ fn search_in_project(path: String, query: String) -> Result<Vec<SearchMatch>, St
     let mut results: Vec<SearchMatch> = Vec::new();
     
     // Supported file extensions
-    let extensions = ["md", "txt", "taleside", "json"];
+    let extensions = ["md", "txt", "arc", "json"];
     
     for entry in WalkDir::new(&path).min_depth(1) {
         let entry = match entry {

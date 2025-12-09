@@ -229,7 +229,7 @@ export class FileTreeComponent {
 
   onFileClick(file: FileNode): void {
     const ext = file.name.toLowerCase();
-    if (ext.endsWith('.md') || ext.endsWith('.txt') || ext.endsWith('.taleside') || ext.endsWith('.json')) {
+    if (ext.endsWith('.md') || ext.endsWith('.txt') || ext.endsWith('.arc') || ext.endsWith('.json')) {
       this.projectState.openFile(file.path);
     }
   }
@@ -367,7 +367,7 @@ export class FileTreeComponent {
   // --- Icons ---
 
   getFileIcon(fileName: string): string {
-    if (fileName.endsWith('.taleside')) return 'auto_stories';
+    if (fileName.endsWith('.arc')) return 'auto_stories';
     if (fileName.endsWith('.md')) return 'description';
     if (fileName.endsWith('.txt')) return 'article';
     if (fileName.endsWith('.json')) return 'data_object';
@@ -375,7 +375,7 @@ export class FileTreeComponent {
   }
 
   getFileIconClass(fileName: string): string {
-    if (fileName.endsWith('.taleside')) return 'text-[var(--accent)]';
+    if (fileName.endsWith('.arc')) return 'text-[var(--accent)]';
     if (fileName.endsWith('.md')) return 'text-[var(--info)]';
     if (fileName.endsWith('.txt')) return 'text-[var(--text-secondary)]';
     if (fileName.endsWith('.json')) return 'text-[var(--warning)]';

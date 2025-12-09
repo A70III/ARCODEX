@@ -1,18 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tales_ide",
-  "version": "0.1.0",
-  "identifier": "com.l2s.tales_ide",
+  "productName": "arc",
+  "version": "1.0.0",
+  "identifier": "com.l2s.arc",
   "build": {
     "beforeDevCommand": "npm run start",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist/tales_ide/browser"
+    "frontendDist": "../dist/arc/browser"
   },
   "app": {
     "windows": [
       {
-        "title": "Tales IDE",
+        "title": "Arc",
         "width": 1000,
         "height": 700,
         "decorations": true,

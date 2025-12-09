@@ -20,7 +20,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
           >
           <span
             class="text-xs font-semibold text-[var(--text-primary)] tracking-wide pt-0.5"
-            >Tales IDE</span
+            >Arc</span
           >
         </div>
 

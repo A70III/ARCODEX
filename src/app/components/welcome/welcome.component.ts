@@ -15,7 +15,7 @@ import { CommonModule } from '@angular/common';
         <!-- Logo/Header -->
         <div class="flex flex-col items-center mb-10">
           <span class="material-icons text-8xl text-[var(--border-color)] mb-4">auto_stories</span>
-          <h1 class="text-3xl font-light mb-2">Tales IDE</h1>
+          <h1 class="text-3xl font-light mb-2">Arc</h1>
           <p class="text-[var(--text-secondary)]">Your Creative Writing Companion</p>
         </div>
 

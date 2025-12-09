@@ -31,7 +31,7 @@ import { CommonModule } from '@angular/common';
           <span>{{ getWordCount(file.content) }} <strong>Words</strong></span>
           <span>{{ getCharCount(file.content) }} <strong>Chars</strong></span>
         }
-        <span class="opacity-70">Tales IDE v0.1.0</span>
+        <span class="opacity-70">Arc v1.0.0</span>
       </div>
     </div>
   `
