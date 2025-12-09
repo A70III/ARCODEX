@@ -207,9 +207,9 @@ import { WelcomeComponent } from '../welcome/welcome.component';
       font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
       font-size: var(--editor-font-size, 16px);
       line-height: 1.9;
-      color: #6e6e6e;
+      color: var(--line-number-color, #6e6e6e);
       user-select: none;
-      border-right: 1px solid #3c3c3c;
+      border-right: 1px solid var(--line-number-border, #3c3c3c);
       margin-right: 16px;
     }
     
@@ -438,16 +438,10 @@ export class EditorComponent implements OnDestroy {
   }
 
   private updateLineCount(editor: Editor): void {
-    // Count block-level nodes (paragraphs, headings, lists, etc.)
+    // Count all top-level block nodes in the document
     const doc = editor.state.doc;
-    let lineCount = 0;
-    doc.descendants((node) => {
-      if (node.isBlock && node.content.size > 0) {
-        lineCount++;
-      }
-      return true;
-    });
-    // Minimum of 1 line
+    // doc.childCount gives us the number of direct children (paragraphs, headings, etc.)
+    const lineCount = doc.childCount;
     this._lineCount.set(Math.max(1, lineCount));
   }
 

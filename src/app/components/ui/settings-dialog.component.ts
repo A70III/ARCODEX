@@ -55,24 +55,24 @@ interface ShortcutItem {
                 <div class="space-y-6">
                   <!-- Theme -->
                   <div>
-                    <label class="block text-[#cccccc] text-sm font-medium mb-3">ธีม</label>
+                    <label class="block text-[var(--text-primary)] text-sm font-medium mb-3">ธีม</label>
                     <div class="grid grid-cols-5 gap-3">
                       @for (theme of settingsService.themes; track theme.id) {
                         <button
                           class="flex flex-col items-center gap-2 p-3 rounded-lg border transition-all"
-                          [class.border-[#007acc]]="settingsService.settings().theme === theme.id"
-                          [class.bg-[#094771]/30]="settingsService.settings().theme === theme.id"
-                          [class.border-[#3c3c3c]]="settingsService.settings().theme !== theme.id"
-                          [class.hover:border-[#555]]="settingsService.settings().theme !== theme.id"
-                          (click)="settingsService.setTheme(theme.id)"
+                          [class.border-[var(--accent)]]="settingsService.settings().theme === theme.id"
+                          [class.bg-[var(--accent-light)]]="settingsService.settings().theme === theme.id"
+                          [class.border-[var(--border-color)]]="settingsService.settings().theme !== theme.id"
+                          [class.hover:border-[var(--border-light)]]="settingsService.settings().theme !== theme.id"
+                          (click)="setTheme(theme.id)"
                         >
                           <div 
-                            class="w-10 h-10 rounded-md border border-[#555]"
-                            [style.background]="theme.colors.bg"
+                            class="w-10 h-10 rounded-md border border-[var(--border-light)] overflow-hidden"
+                            [style.background]="theme.colors.bgPrimary"
                           >
-                            <div class="w-full h-1/2 rounded-t-md" [style.background]="theme.colors.bgSecondary"></div>
+                            <div class="w-full h-1/2" [style.background]="theme.colors.bgSecondary"></div>
                           </div>
-                          <span class="text-xs text-[#cccccc]">{{ theme.name }}</span>
+                          <span class="text-xs text-[var(--text-primary)]">{{ theme.name }}</span>
                         </button>
                       }
                     </div>
@@ -288,5 +288,9 @@ export class SettingsDialogComponent {
   toggleAutoSave(event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
     this.settingsService.setAutoSaveInterval(checked ? 30 : 0);
+  }
+  
+  setTheme(themeId: string): void {
+    this.settingsService.setTheme(themeId as ThemeType);
   }
 }
