@@ -472,6 +472,20 @@ export class EditorComponent implements OnDestroy {
       }
     });
 
+    // Effect for handling search navigation
+    effect(() => {
+      const navigation = this.projectState.pendingNavigation();
+      const activeFile = this.projectState.activeFile();
+
+      if (navigation && activeFile && navigation.path === activeFile.path && this.editor) {
+        // Wait for editor content to be ready if needed
+        setTimeout(() => {
+          this.highlightMatch(navigation.match);
+          this.projectState.clearNavigation();
+        }, 100);
+      }
+    });
+
     // Listen for editor actions from header menu or global shortcuts
     document.addEventListener("editorAction", this.onEditorAction.bind(this));
   }
@@ -599,6 +613,61 @@ export class EditorComponent implements OnDestroy {
     if (this.editor) {
       this.editor.destroy();
       this.editor = null;
+    }
+  }
+
+  private highlightMatch(match: any): void {
+    if (!this.editor) return;
+
+    const doc = this.editor.state.doc;
+    const lineContent = match.line_content;
+    
+    // Simple search for the line content in the document
+    // This is a basic implementation. For large docs, we might want a more optimized approach.
+    let pos = 0;
+    let found = false;
+    
+    doc.descendants((node, position) => {
+      if (found) return false;
+      
+      if (node.isText && node.text) {
+        const index = node.text.indexOf(lineContent);
+        if (index !== -1) {
+          // Found the line
+          const start = position + index + match.match_start;
+          const end = position + index + match.match_end;
+          
+          this.editor?.commands.setTextSelection({ from: start, to: end });
+          this.editor?.commands.scrollIntoView();
+          found = true;
+          return false;
+        }
+      }
+      return true;
+    });
+    
+    // Fallback: if exact line not found (maybe formatting changed it), try just the query
+    if (!found) {
+       // We can try to construct the query from match_start/end but we don't have the query string directly in match
+       // But we have line_content and indices, so we can extract it
+       const query = lineContent.substring(match.match_start, match.match_end);
+       if (query) {
+         doc.descendants((node, position) => {
+            if (found) return false;
+            if (node.isText && node.text) {
+                const index = node.text.indexOf(query);
+                if (index !== -1) {
+                    const start = position + index;
+                    const end = position + index + query.length;
+                    this.editor?.commands.setTextSelection({ from: start, to: end });
+                    this.editor?.commands.scrollIntoView();
+                    found = true;
+                    return false;
+                }
+            }
+            return true;
+         });
+       }
     }
   }
 

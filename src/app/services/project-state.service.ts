@@ -24,6 +24,9 @@ export class ProjectStateService {
   private _fileTree = signal<FileNode | null>(null);
   private _openedFiles = signal<OpenedFile[]>([]);
   private _activeFilePath = signal<string>('');
+  
+  // Navigation state
+  readonly pendingNavigation = signal<{ path: string; match: any } | null>(null);
 
   // Public readonly signals
   readonly currentFolderPath = this._currentFolderPath.asReadonly();
@@ -188,6 +191,15 @@ export class ProjectStateService {
     } catch (error) {
       console.error('Failed to open file:', error);
     }
+  }
+
+  /**
+   * Open file and navigate to specific match
+   */
+  async navigateToMatch(path: string, match: any): Promise<void> {
+    await this.openFile(path);
+    // Set pending navigation after file is opened (or if already open)
+    this.pendingNavigation.set({ path, match });
   }
 
   /**
@@ -426,5 +438,12 @@ export class ProjectStateService {
    */
   triggerEditAction(action: string): void {
     document.dispatchEvent(new CustomEvent('editorAction', { detail: action }));
+  }
+
+  /**
+   * Clear pending navigation
+   */
+  clearNavigation(): void {
+    this.pendingNavigation.set(null);
   }
 }

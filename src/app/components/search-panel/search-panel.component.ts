@@ -189,8 +189,7 @@ export class SearchPanelComponent {
   }
   
   openResult(result: SearchMatch): void {
-    this.projectState.openFile(result.file_path);
-    // TODO: Could also scroll to line number in editor
+    this.projectState.navigateToMatch(result.file_path, result);
   }
   
   highlightMatch(result: SearchMatch): string {
