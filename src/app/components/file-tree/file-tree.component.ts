@@ -25,6 +25,7 @@ interface ContextMenuState {
             [style.padding-left.px]="depth * 12 + 4"
             (click)="toggleFolder(child.path)"
             (contextmenu)="onContextMenu($event, child)"
+            
           >
             <span class="material-icons text-sm text-[var(--text-primary)]">
               {{ isExpanded(child.path) ? 'expand_more' : 'chevron_right' }}
@@ -33,6 +34,23 @@ interface ContextMenuState {
               {{ isExpanded(child.path) ? 'folder_open' : 'folder' }}
             </span>
             <span class="text-sm truncate select-none pointer-events-none">{{ child.name }}</span>
+            
+            <div class="ml-auto hidden group-hover:flex items-center gap-1 pr-2">
+              <button 
+                class="flex items-center justify-center p-1 text-[var(--text-primary)] hover:bg-[var(--bg-active)] rounded transition-colors"
+                title="New File"
+                (click)="$event.stopPropagation(); startCreate('file', child)"
+              >
+                <span class="material-icons text-sm">note_add</span>
+              </button>
+              <button 
+                class="flex items-center justify-center p-1 text-[var(--text-primary)] hover:bg-[var(--bg-active)] rounded transition-colors"
+                title="New Folder"
+                (click)="$event.stopPropagation(); startCreate('folder', child)"
+              >
+                <span class="material-icons text-sm">create_new_folder</span>
+              </button>
+            </div>
           </div>
           
           @if (isExpanded(child.path)) {
@@ -242,8 +260,8 @@ export class FileTreeComponent {
     this.closeContextMenu();
   }
 
-  startCreate(type: 'file' | 'folder'): void {
-    const parentFile = this.contextMenu().file;
+  startCreate(type: 'file' | 'folder', parentNode?: FileNode): void {
+    const parentFile = parentNode || this.contextMenu().file;
     if (parentFile && parentFile.is_dir) {
       // Expand folder first
       this.expandedFolders.update(set => {
