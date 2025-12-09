@@ -30,7 +30,12 @@ import { SettingsService } from '../../services/settings.service';
     CodexLibraryComponent
   ],
   template: `
-    <div class="flex flex-col h-screen w-screen overflow-hidden bg-[var(--bg-primary)]">
+    <div 
+      class="flex flex-col h-screen w-screen overflow-hidden bg-[var(--bg-primary)]"
+      (mouseup)="stopResize()"
+      (mouseleave)="stopResize()"
+      (mousemove)="onResize($event)"
+    >
       <!-- Header / Menu Bar - hidden in focus mode -->
       @if (!projectState.focusMode()) {
         <app-header />
@@ -43,9 +48,20 @@ import { SettingsService } from '../../services/settings.service';
           <app-activity-bar />
         }
         
-        <!-- Sidebar (Responsive width) - hidden in focus mode or codex mode -->
+        <!-- Sidebar (Resizable) - hidden in focus mode or codex mode -->
         @if (!projectState.focusMode() && projectState.sidebarVisible() && projectState.activeSidebarView() !== 'codex') {
-          <app-sidebar class="w-[260px] lg:w-[300px] flex-shrink-0 transition-all duration-200" />
+          <div 
+            class="relative flex-shrink-0 flex h-full"
+            [style.width.px]="sidebarWidth()"
+          >
+            <app-sidebar class="w-full h-full overflow-hidden" />
+            
+            <!-- Resizer Handle -->
+            <div 
+              class="resizer-handle right" 
+              (mousedown)="startResizeSidebar($event)"
+            ></div>
+          </div>
         }
         
         <!-- Codex Library - full area when active -->
@@ -53,12 +69,25 @@ import { SettingsService } from '../../services/settings.service';
           <app-codex-library class="flex-1 min-w-0 overflow-hidden" />
         } @else {
           <!-- Editor (flex-1) -->
-          <app-editor class="flex-1 min-w-0 overflow-hidden" />
+          <div class="flex-1 min-w-0 overflow-hidden relative h-full">
+            <app-editor class="w-full h-full" />
+          </div>
         }
         
-        <!-- Info Panel / Right Sidebar (Responsive width) - hidden in focus mode or codex mode -->
+        <!-- Info Panel / Right Sidebar (Resizable) - hidden in focus mode or codex mode -->
         @if (!projectState.focusMode() && projectState.infoPanelVisible() && projectState.activeSidebarView() !== 'codex') {
-          <app-info-panel class="w-[280px] lg:w-[320px] flex-shrink-0 transition-all duration-200" />
+          <div 
+            class="relative flex-shrink-0 flex h-full"
+            [style.width.px]="infoPanelWidth()"
+          >
+             <!-- Resizer Handle (Left side of panel) -->
+             <div 
+              class="resizer-handle left" 
+              (mousedown)="startResizeInfoPanel($event)"
+            ></div>
+            
+            <app-info-panel class="w-full h-full overflow-hidden" />
+          </div>
         }
 
         <!-- Delete Confirmation Modal -->
@@ -90,6 +119,11 @@ import { SettingsService } from '../../services/settings.service';
             Press <kbd class="px-1 py-0.5 bg-[var(--bg-hover)] rounded text-[var(--text-primary)]">ESC</kbd> or <kbd class="px-1 py-0.5 bg-[var(--bg-hover)] rounded text-[var(--text-primary)]">F11</kbd> to exit Focus Mode
           </div>
         }
+        
+        <!-- Resize Overlay (invisible) to prevent iframe/selection interference during drag -->
+        @if (isResizing()) {
+          <div class="fixed inset-0 z-[9999] cursor-col-resize"></div>
+        }
       </div>
       
       <!-- Status Bar - hidden in focus mode -->
@@ -104,15 +138,43 @@ import { SettingsService } from '../../services/settings.service';
       height: 100%;
       width: 100%;
     }
+    
+    .resizer-handle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      cursor: col-resize;
+      z-index: 10;
+      transition: background-color 0.2s;
+    }
+    
+    .resizer-handle:hover, .resizer-handle:active {
+      background-color: var(--accent);
+    }
+    
+    .resizer-handle.right {
+      right: -2px; /* Center over border */
+    }
+    
+    .resizer-handle.left {
+      left: -2px; /* Center over border */
+    }
   `]
 })
 export class MainLayoutComponent implements OnInit, OnDestroy {
   projectState = inject(ProjectStateService);
   settingsService = inject(SettingsService);
   
-  // Use signals from service directly in template
-  // sidebarVisible -> projectState.sidebarVisible
-  // infoPanelVisible -> projectState.infoPanelVisible
+  // Resizable state
+  sidebarWidth = signal(260);
+  infoPanelWidth = signal(280);
+  
+  isResizingSidebar = signal(false);
+  isResizingInfoPanel = signal(false);
+  
+  // Computed helper to check if any resize is active
+  isResizing = signal(false);
 
   ngOnInit(): void {
     // Register auto-save callback
@@ -173,6 +235,45 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
           break;
         // Edit menu shortcuts are handled by focused element or EditorComponent
       }
+    }
+  }
+  
+  // Resize Handlers
+  
+  startResizeSidebar(event: MouseEvent): void {
+    event.preventDefault();
+    this.isResizingSidebar.set(true);
+    this.isResizing.set(true);
+  }
+  
+  startResizeInfoPanel(event: MouseEvent): void {
+    event.preventDefault();
+    this.isResizingInfoPanel.set(true);
+    this.isResizing.set(true);
+  }
+  
+  onResize(event: MouseEvent): void {
+    if (this.isResizingSidebar()) {
+      // Calculate new sidebar width based on mouse X (approx)
+      // We assume sidebar is on the left, starting after activity bar (48px)
+      // So width = mouseX - 48
+      const newWidth = Math.max(150, Math.min(600, event.clientX - 49)); // 49 is approx activity bar width + 1 for border
+      this.sidebarWidth.set(newWidth);
+    } 
+    else if (this.isResizingInfoPanel()) {
+      // Info panel is on the right
+      // Width = WindowWidth - MouseX
+      const windowWidth = window.innerWidth;
+      const newWidth = Math.max(200, Math.min(600, windowWidth - event.clientX));
+      this.infoPanelWidth.set(newWidth);
+    }
+  }
+  
+  stopResize(): void {
+    if (this.isResizing()) {
+      this.isResizingSidebar.set(false);
+      this.isResizingInfoPanel.set(false);
+      this.isResizing.set(false);
     }
   }
 }

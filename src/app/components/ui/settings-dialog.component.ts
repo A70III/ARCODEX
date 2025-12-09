@@ -199,7 +199,7 @@ interface ShortcutItem {
                   <div class="space-y-2 text-sm">
                     <div class="flex items-center justify-center gap-2">
                       <span class="text-[var(--text-secondary)]">เวอร์ชัน:</span>
-                      <span class="text-[var(--text-primary)]">0.1.0</span>
+                      <span class="text-[var(--text-primary)]">1.0.0</span>
                     </div>
                     <div class="flex items-center justify-center gap-2">
                       <span class="text-[var(--text-secondary)]">ผู้พัฒนา:</span>
