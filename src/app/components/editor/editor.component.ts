@@ -292,9 +292,9 @@ const searchHighlightPlugin = new Plugin({
             (input)="onSearchInput()"
             (keydown)="onSearchKeydown($event)"
           />
-          @if (totalMatches() > 0) {
+      @if (totalMatches() > 0) {
           <span class="search-count">
-            {{ currentMatchIndex() + 1 }} / {{ totalMatches() }}
+            {{ currentMatchIndex() + 1 }} / {{ totalMatches() }}{{ totalMatches() >= 1000 ? '+' : '' }}
           </span>
           }
           @if (searchQuery && totalMatches() === 0) {
@@ -1081,7 +1081,7 @@ export class EditorComponent implements OnDestroy {
     }
     this.searchDebounceTimer = setTimeout(() => {
       this.performSearch();
-    }, 150);
+    }, 300);
   }
 
   onSearchKeydown(event: KeyboardEvent): void {
@@ -1113,10 +1113,13 @@ export class EditorComponent implements OnDestroy {
 
     // Find all matches in the document
     doc.descendants((node, pos) => {
+      if (matches.length >= 1000) return false;
+
       if (node.isText && node.text) {
         const text = node.text.toLowerCase();
         let index = 0;
         while ((index = text.indexOf(query, index)) !== -1) {
+           if (matches.length >= 1000) break;
           matches.push({
             from: pos + index,
             to: pos + index + this.searchQuery.length
