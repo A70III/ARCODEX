@@ -1,41 +1,41 @@
-import { Theme } from './theme.interface';
+import { Theme } from "./theme.interface";
 
 export const draculaTheme: Theme = {
-  id: 'dracula',
-  name: 'แดร็กคูล่า',
-  nameEn: 'Dracula',
+  id: "dracula",
+  name: "แดร็กคูล่า",
+  nameEn: "Dracula",
   colors: {
     // Background colors
-    bgPrimary: '#282a36',
-    bgSecondary: '#44475a',
-    bgTertiary: '#4e5269',
-    bgHover: '#6272a4',
-    bgActive: '#bd93f9',
-    
+    bgPrimary: "#242830",
+    bgSecondary: "#3a3d4a",
+    bgTertiary: "#4e5269",
+    bgHover: "#6272a4",
+    bgActive: "#a78bfa",
+
     // Border colors
-    borderColor: '#44475a',
-    borderLight: '#6272a4',
-    
+    borderColor: "#3a3d4a",
+    borderLight: "#6272a4",
+
     // Text colors
-    textPrimary: '#f8f8f2',
-    textSecondary: '#e0e0e0',
-    textMuted: '#6272a4',
-    textInverse: '#282a36',
-    
-    // Accent colors - Dracula Purple
-    accent: '#bd93f9',
-    accentHover: '#a87df7',
-    accentLight: '#44475a',
-    
-    // Semantic colors - Dracula palette
-    success: '#50fa7b',
-    warning: '#f1fa8c',
-    error: '#ff5555',
-    info: '#8be9fd',
-    
+    textPrimary: "#e0e6f0",
+    textSecondary: "#b8c0c8",
+    textMuted: "#6272a4",
+    textInverse: "#242830",
+
+    // Accent colors - Muted Dracula Purple
+    accent: "#a78bfa",
+    accentHover: "#9b7bf0",
+    accentLight: "#3a3d4a",
+
+    // Semantic colors - Muted palette
+    success: "#56d364",
+    warning: "#e3b341",
+    error: "#f85149",
+    info: "#58a6ff",
+
     // Editor specific
-    editorBg: '#282a36',
-    lineNumberColor: '#6272a4',
-    lineNumberBorder: '#44475a',
-  }
+    editorBg: "#242830",
+    lineNumberColor: "#6272a4",
+    lineNumberBorder: "#3a3d4a",
+  },
 };

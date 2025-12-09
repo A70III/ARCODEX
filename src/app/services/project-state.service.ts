@@ -9,6 +9,7 @@ export class ProjectStateService {
   // UI State
   readonly sidebarVisible = signal<boolean>(true);
   readonly infoPanelVisible = signal<boolean>(true);
+  readonly focusMode = signal<boolean>(false);
 
   // State signals
   private _currentFolderPath = signal<string>('');
@@ -305,6 +306,13 @@ export class ProjectStateService {
    */
   toggleInfoPanel(): void {
     this.infoPanelVisible.update(v => !v);
+  }
+
+  /**
+   * Toggle Focus Mode - hides all UI except editor for distraction-free writing
+   */
+  toggleFocusMode(): void {
+    this.focusMode.update(v => !v);
   }
 
   /**

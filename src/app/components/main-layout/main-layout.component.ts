@@ -27,24 +27,28 @@ import { SettingsService } from '../../services/settings.service';
   ],
   template: `
     <div class="flex flex-col h-screen w-screen overflow-hidden bg-[var(--bg-primary)]">
-      <!-- Header / Menu Bar -->
-      <app-header />
+      <!-- Header / Menu Bar - hidden in focus mode -->
+      @if (!projectState.focusMode()) {
+        <app-header />
+      }
       
       <!-- Main content area -->
       <div class="flex flex-1 overflow-hidden relative">
-        <!-- Activity Bar (48px) -->
-        <app-activity-bar />
+        <!-- Activity Bar (48px) - hidden in focus mode -->
+        @if (!projectState.focusMode()) {
+          <app-activity-bar />
+        }
         
-        <!-- Sidebar (250px) -->
-        @if (projectState.sidebarVisible()) {
+        <!-- Sidebar (250px) - hidden in focus mode -->
+        @if (!projectState.focusMode() && projectState.sidebarVisible()) {
           <app-sidebar class="w-[250px] flex-shrink-0" />
         }
         
         <!-- Editor (flex-1) -->
         <app-editor class="flex-1 min-w-0 overflow-hidden" />
         
-        <!-- Info Panel / Right Sidebar (280px) -->
-        @if (projectState.infoPanelVisible()) {
+        <!-- Info Panel / Right Sidebar (280px) - hidden in focus mode -->
+        @if (!projectState.focusMode() && projectState.infoPanelVisible()) {
           <app-info-panel class="w-[280px] flex-shrink-0" />
         }
 
@@ -62,10 +66,22 @@ import { SettingsService } from '../../services/settings.service';
         @if (settingsService.dialogOpen()) {
           <app-settings-dialog />
         }
+        
+        <!-- Focus Mode Overlay - ESC to exit -->
+        @if (projectState.focusMode()) {
+          <div 
+            class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] text-xs px-3 py-1.5 rounded-full shadow-lg opacity-50 hover:opacity-100 transition-opacity z-50"
+            (click)="projectState.toggleFocusMode()"
+          >
+            Press <kbd class="px-1 py-0.5 bg-[var(--bg-hover)] rounded text-[var(--text-primary)]">ESC</kbd> or <kbd class="px-1 py-0.5 bg-[var(--bg-hover)] rounded text-[var(--text-primary)]">F11</kbd> to exit Focus Mode
+          </div>
+        }
       </div>
       
-      <!-- Status Bar -->
-      <app-status-bar />
+      <!-- Status Bar - hidden in focus mode -->
+      @if (!projectState.focusMode()) {
+        <app-status-bar />
+      }
     </div>
   `,
   styles: [`
@@ -99,6 +115,20 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   handleKeyboardEvent(event: KeyboardEvent) {
     const isCtrlOrCmd = event.ctrlKey || event.metaKey;
     const isShift = event.shiftKey;
+
+    // ESC to exit focus mode
+    if (event.key === 'Escape' && this.projectState.focusMode()) {
+      event.preventDefault();
+      this.projectState.toggleFocusMode();
+      return;
+    }
+
+    // F11 to toggle focus mode
+    if (event.key === 'F11') {
+      event.preventDefault();
+      this.projectState.toggleFocusMode();
+      return;
+    }
 
     if (isCtrlOrCmd) {
       switch (event.key.toLowerCase()) {
