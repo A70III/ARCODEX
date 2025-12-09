@@ -438,11 +438,27 @@ export class EditorComponent implements OnDestroy {
   }
 
   private updateLineCount(editor: Editor): void {
-    // Count all top-level block nodes in the document
-    const doc = editor.state.doc;
-    // doc.childCount gives us the number of direct children (paragraphs, headings, etc.)
-    const lineCount = doc.childCount;
-    this._lineCount.set(Math.max(1, lineCount));
+    // Count visual lines based on actual rendered height
+    // This accounts for text wrapping
+    const editorElement = this.editorContainer?.nativeElement.querySelector('.tiptap');
+    if (!editorElement) {
+      // Fallback to block count
+      this._lineCount.set(Math.max(1, editor.state.doc.childCount));
+      return;
+    }
+    
+    // Get computed styles for line height calculation
+    const computedStyle = window.getComputedStyle(editorElement);
+    const fontSize = parseFloat(computedStyle.fontSize) || 16;
+    const lineHeight = parseFloat(computedStyle.lineHeight) || (fontSize * 1.9);
+    
+    // Get the actual content height
+    const contentHeight = editorElement.scrollHeight;
+    
+    // Calculate visual line count
+    const visualLineCount = Math.ceil(contentHeight / lineHeight);
+    
+    this._lineCount.set(Math.max(1, visualLineCount));
   }
 
   private destroyEditor(): void {
