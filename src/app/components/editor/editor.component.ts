@@ -24,7 +24,40 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { WelcomeComponent } from '../workspace/welcome/welcome.component';
 
 // Search highlight plugin key
+// Search highlight plugin
 const searchHighlightPluginKey = new PluginKey('searchHighlight');
+
+const searchHighlightPlugin = new Plugin({
+  key: searchHighlightPluginKey,
+  state: {
+    init() {
+      return DecorationSet.empty;
+    },
+    apply(tr, oldSet) {
+      let set = oldSet.map(tr.mapping, tr.doc);
+      const meta = tr.getMeta(searchHighlightPluginKey);
+      if (meta) {
+        if (meta.clear) {
+          return DecorationSet.empty;
+        }
+        const { matches, currentMatchIndex } = meta;
+        if (matches) {
+          const decorations = matches.map((match: any, idx: number) => {
+            const className = idx === currentMatchIndex ? 'search-highlight-current' : 'search-highlight';
+            return Decoration.inline(match.from, match.to, { class: className });
+          });
+          set = DecorationSet.create(tr.doc, decorations);
+        }
+      }
+      return set;
+    }
+  },
+  props: {
+    decorations(state) {
+      return this.getState(state);
+    }
+  }
+});
 
 @Component({
   selector: "app-editor",
@@ -633,17 +666,32 @@ export class EditorComponent implements OnDestroy {
 
       if (activeFile) {
         if (this.currentFilePath !== activeFile.path) {
+          // File changed
           this.currentFilePath = activeFile.path;
+          
+          // Reset search state to prevent out-of-bounds access on the new file
+          // We keep the query but clear matches until re-search
+          this.searchMatches = [];
+          this.currentMatchIndex.set(0);
+          this.totalMatches.set(0);
+          // We don't call clearHighlights() here because the editor instance might be about to change content
+          // The search will be re-run after content update if visible
+          
           setTimeout(() => {
             if (this.editorContainer?.nativeElement) {
               if (this.editor) {
                 this.isUpdatingFromService = true;
-                this.editor.commands.setContent(
-                  this.parseContent(activeFile.content)
-                );
+                const newContent = this.parseContent(activeFile.content);
+                this.editor.commands.setContent(newContent);
                 this.isUpdatingFromService = false;
+                
+                // Re-run search if it was open
+                if (this.searchVisible() && this.searchQuery) {
+                  this.performSearch();
+                }
               } else {
                 this.initEditor(activeFile.content);
+                // Search will be initialized if needed but usually better to wait for user interaction
               }
             }
           }, 0);
@@ -651,6 +699,8 @@ export class EditorComponent implements OnDestroy {
       } else {
         this.currentFilePath = "";
         this.destroyEditor();
+        // Also close search if no file
+        this.searchVisible.set(false);
       }
     });
 
@@ -739,6 +789,7 @@ export class EditorComponent implements OnDestroy {
       },
       onCreate: ({ editor }) => {
         this.updateLineCount(editor);
+        editor.registerPlugin(searchHighlightPlugin);
       },
       onUpdate: ({ editor }) => {
         if (this.isUpdatingFromService) return;
@@ -1124,52 +1175,22 @@ export class EditorComponent implements OnDestroy {
   private updateHighlights(): void {
     if (!this.editor) return;
 
-    const currentIdx = this.currentMatchIndex();
-    const decorations = this.searchMatches.map((match, idx) => {
-      const className = idx === currentIdx ? 'search-highlight-current' : 'search-highlight';
-      return Decoration.inline(match.from, match.to, { class: className });
-    });
-
-    // Register or update the decoration plugin
-    const plugin = new Plugin({
-      key: searchHighlightPluginKey,
-      props: {
-        decorations: () => DecorationSet.create(this.editor!.state.doc, decorations)
-      }
-    });
-
-    // Remove old plugin and add new one
-    const existingPlugin = this.editor.state.plugins.find(
-      p => (p as any).key === searchHighlightPluginKey
+    // Dispatch transaction to update plugin state
+    this.editor.view.dispatch(
+      this.editor.state.tr.setMeta(searchHighlightPluginKey, {
+        matches: this.searchMatches,
+        currentMatchIndex: this.currentMatchIndex()
+      })
     );
-    
-    if (existingPlugin) {
-      // Replace plugin by creating new state
-      const newPlugins = this.editor.state.plugins.filter(
-        p => (p as any).key !== searchHighlightPluginKey
-      );
-      newPlugins.push(plugin);
-      const newState = this.editor.state.reconfigure({ plugins: newPlugins });
-      this.editor.view.updateState(newState);
-    } else {
-      // Add new plugin
-      const tr = this.editor.state.tr.setMeta('addPlugin', plugin);
-      // Manually register plugin
-      this.editor.registerPlugin(plugin);
-    }
   }
 
   private clearHighlights(): void {
     if (!this.editor) return;
     
-    // Remove the search highlight plugin
-    const existingPlugin = this.editor.state.plugins.find(
-      p => (p as any).key === searchHighlightPluginKey
+    // Dispatch transaction to clear plugin state
+    this.editor.view.dispatch(
+      this.editor.state.tr.setMeta(searchHighlightPluginKey, { clear: true })
     );
-    
-    if (existingPlugin) {
-      this.editor.unregisterPlugin(searchHighlightPluginKey);
-    }
   }
 
   // --- Icons ---
