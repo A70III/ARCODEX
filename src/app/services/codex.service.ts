@@ -171,6 +171,9 @@ export class CodexService {
       const newFolderPath = `${codexPath}/${folderName}`;
       await invoke('create_folder', { path: newFolderPath });
 
+      // Refresh file tree in the background
+      this.projectState.refreshFileTree();
+
       // Update config.taleside with new submenu entry
       await this.addSubmenuEntry(folderName, displayName);
 
