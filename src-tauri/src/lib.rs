@@ -223,7 +223,112 @@ fn create_new_project(base_path: String, config: ProjectConfig) -> Result<String
     Ok(project_path.to_string_lossy().to_string())
 }
 
-/// Command 9: Rename item
+/// Search result match
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchMatch {
+    pub file_path: String,
+    pub file_name: String,
+    pub root_folder: String,
+    pub line_number: usize,
+    pub line_content: String,
+    pub match_start: usize,
+    pub match_end: usize,
+}
+
+/// Command 9: Search in project files
+#[tauri::command]
+fn search_in_project(path: String, query: String) -> Result<Vec<SearchMatch>, String> {
+    let root_path = Path::new(&path);
+    
+    if !root_path.exists() {
+        return Err(format!("Path does not exist: {}", path));
+    }
+    
+    if query.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    
+    let query_lower = query.to_lowercase();
+    let mut results: Vec<SearchMatch> = Vec::new();
+    
+    // Supported file extensions
+    let extensions = ["md", "txt", "taleside", "json"];
+    
+    for entry in WalkDir::new(&path).min_depth(1) {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        
+        let entry_path = entry.path();
+        
+        // Skip directories
+        if entry_path.is_dir() {
+            continue;
+        }
+        
+        // Check extension
+        let ext = entry_path.extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("");
+        
+        if !extensions.contains(&ext) {
+            continue;
+        }
+        
+        // Read file content
+        let content = match fs::read_to_string(entry_path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        
+        // Get file name and root folder
+        let file_name = entry_path.file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        
+        // Get root folder (first folder after project root)
+        let relative_path = entry_path.strip_prefix(&path).unwrap_or(entry_path);
+        let root_folder = relative_path.components()
+            .next()
+            .map(|c| c.as_os_str().to_string_lossy().to_string())
+            .unwrap_or_else(|| ".".to_string());
+        
+        // Search through lines
+        for (line_idx, line) in content.lines().enumerate() {
+            let line_lower = line.to_lowercase();
+            
+            // Find all matches in the line
+            let mut search_start = 0;
+            while let Some(pos) = line_lower[search_start..].find(&query_lower) {
+                let match_start = search_start + pos;
+                let match_end = match_start + query.len();
+                
+                results.push(SearchMatch {
+                    file_path: entry_path.to_string_lossy().to_string(),
+                    file_name: file_name.clone(),
+                    root_folder: root_folder.clone(),
+                    line_number: line_idx + 1,
+                    line_content: line.to_string(),
+                    match_start,
+                    match_end,
+                });
+                
+                search_start = match_end;
+                
+                // Limit results to avoid memory issues
+                if results.len() >= 500 {
+                    return Ok(results);
+                }
+            }
+        }
+    }
+    
+    Ok(results)
+}
+
+/// Command 10: Rename item
 #[tauri::command]
 fn rename_item(old_path: String, new_path: String) -> Result<(), String> {
     fs::rename(&old_path, &new_path).map_err(|e| format!("Failed to rename item: {}", e))
@@ -244,6 +349,7 @@ pub fn run() {
             delete_file,
             create_folder,
             create_new_project,
+            search_in_project,
             rename_item
         ])
         .run(tauri::generate_context!())

@@ -11,6 +11,7 @@ export class ProjectStateService {
   readonly sidebarVisible = signal<boolean>(true);
   readonly infoPanelVisible = signal<boolean>(true);
   readonly focusMode = signal<boolean>(false);
+  readonly activeSidebarView = signal<string>('explorer');
   readonly newProjectDialogOpen = signal<boolean>(false);
   
   // Temporary storage for folder path during new project creation
@@ -385,6 +386,17 @@ export class ProjectStateService {
    */
   toggleFocusMode(): void {
     this.focusMode.update(v => !v);
+  }
+
+  /**
+   * Set active sidebar view (explorer, search, etc.)
+   */
+  setActiveSidebarView(view: string): void {
+    this.activeSidebarView.set(view);
+    // Ensure sidebar is visible when switching views
+    if (!this.sidebarVisible()) {
+      this.sidebarVisible.set(true);
+    }
   }
 
   /**

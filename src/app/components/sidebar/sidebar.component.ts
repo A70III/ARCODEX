@@ -2,98 +2,108 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ProjectStateService } from '../../services/project-state.service';
 import { FileTreeComponent } from '../file-tree/file-tree.component';
+import { SearchPanelComponent } from '../search-panel/search-panel.component';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [FileTreeComponent, FormsModule],
+  imports: [FileTreeComponent, SearchPanelComponent, FormsModule],
   template: `
     <div class="flex flex-col h-full bg-[var(--bg-secondary)] border-r border-[var(--border-color)]" (contextmenu)="onContextMenu($event)">
-      <!-- Header -->
-      <div class="flex items-center justify-between px-4 py-2 text-[11px] font-medium text-[var(--text-secondary)] tracking-wide uppercase">
-        <span>Explorer</span>
-      </div>
       
-      <!-- Project section -->
-      @if (projectState.currentFolderPath()) {
-        <!-- Project name header with actions -->
-        <div class="flex items-center justify-between px-2 py-1 hover:bg-[var(--bg-hover)] group">
-          <div 
-            class="flex items-center gap-1 text-[11px] font-semibold text-[var(--text-primary)] uppercase cursor-pointer flex-1"
-            (click)="toggleProjectExpanded()"
-          >
-            <span class="material-icons text-base text-[var(--text-primary)]">
-              {{ projectExpanded() ? 'expand_more' : 'chevron_right' }}
-            </span>
-            <span class="truncate">{{ projectState.projectName() }}</span>
+      <!-- Explorer View -->
+      @if (projectState.activeSidebarView() === 'explorer') {
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-2 text-[11px] font-medium text-[var(--text-secondary)] tracking-wide uppercase">
+          <span>Explorer</span>
+        </div>
+        
+        <!-- Project section -->
+        @if (projectState.currentFolderPath()) {
+          <!-- Project name header with actions -->
+          <div class="flex items-center justify-between px-2 py-1 hover:bg-[var(--bg-hover)] group">
+            <div 
+              class="flex items-center gap-1 text-[11px] font-semibold text-[var(--text-primary)] uppercase cursor-pointer flex-1"
+              (click)="toggleProjectExpanded()"
+            >
+              <span class="material-icons text-base text-[var(--text-primary)]">
+                {{ projectExpanded() ? 'expand_more' : 'chevron_right' }}
+              </span>
+              <span class="truncate">{{ projectState.projectName() }}</span>
+            </div>
+            
+            <!-- Action buttons - visible on hover -->
+            <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button 
+                class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
+                title="New File"
+                (click)="startNewFile($event)"
+              >
+                <span class="material-icons text-base">note_add</span>
+              </button>
+              <button 
+                class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
+                title="New Folder"
+                (click)="startNewFolder($event)"
+              >
+                <span class="material-icons text-base">create_new_folder</span>
+              </button>
+              <button 
+                class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
+                title="Refresh Explorer"
+                (click)="onRefresh($event)"
+              >
+                <span class="material-icons text-base" [class.animate-spin]="isRefreshing()">refresh</span>
+              </button>
+            </div>
           </div>
           
-          <!-- Action buttons - visible on hover -->
-          <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button 
-              class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
-              title="New File"
-              (click)="startNewFile($event)"
+          <!-- Inline new file/folder input -->
+          @if (isCreating()) {
+            <div class="flex items-center gap-1 px-2 py-1 ml-4">
+              <span class="material-icons text-base" [class.text-[var(--warning)]]="creatingType() === 'folder'" [class.text-[var(--info)]]="creatingType() === 'file'">
+                {{ creatingType() === 'folder' ? 'folder' : 'description' }}
+              </span>
+              <input
+                #newItemInput
+                type="text"
+                class="flex-1 bg-[var(--bg-hover)] border border-[var(--accent)] text-[var(--text-primary)] text-sm px-2 py-0.5 rounded outline-none"
+                [placeholder]="creatingType() === 'folder' ? 'Folder name' : 'File name (e.g., chapter1.md)'"
+                [(ngModel)]="newItemName"
+                (keydown.enter)="confirmCreate()"
+                (keydown.escape)="cancelCreate()"
+                (blur)="onInputBlur()"
+              />
+            </div>
+          }
+          
+          <!-- File tree -->
+          @if (projectExpanded() && projectState.fileTree()) {
+            <div class="flex-1 overflow-y-auto pl-2">
+              <app-file-tree [node]="projectState.fileTree()!" [depth]="0" />
+            </div>
+          }
+        } @else {
+          <!-- No folder opened -->
+          <div class="flex flex-col items-center justify-center flex-1 px-4 text-center">
+            <span class="material-icons text-5xl text-[var(--border-color)] mb-4">folder_open</span>
+            <p class="text-[var(--text-secondary)] text-sm mb-4">You have not yet opened a folder.</p>
+            <button
+              class="w-full px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-inverse)] text-sm rounded transition-colors"
+              (click)="onOpenProject()"
             >
-              <span class="material-icons text-base">note_add</span>
+              Open Folder
             </button>
-            <button 
-              class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
-              title="New Folder"
-              (click)="startNewFolder($event)"
-            >
-              <span class="material-icons text-base">create_new_folder</span>
-            </button>
-            <button 
-              class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
-              title="Refresh Explorer"
-              (click)="onRefresh($event)"
-            >
-              <span class="material-icons text-base" [class.animate-spin]="isRefreshing()">refresh</span>
-            </button>
-          </div>
-        </div>
-        
-        <!-- Inline new file/folder input -->
-        @if (isCreating()) {
-          <div class="flex items-center gap-1 px-2 py-1 ml-4">
-            <span class="material-icons text-base" [class.text-[var(--warning)]]="creatingType() === 'folder'" [class.text-[var(--info)]]="creatingType() === 'file'">
-              {{ creatingType() === 'folder' ? 'folder' : 'description' }}
-            </span>
-            <input
-              #newItemInput
-              type="text"
-              class="flex-1 bg-[var(--bg-hover)] border border-[var(--accent)] text-[var(--text-primary)] text-sm px-2 py-0.5 rounded outline-none"
-              [placeholder]="creatingType() === 'folder' ? 'Folder name' : 'File name (e.g., chapter1.md)'"
-              [(ngModel)]="newItemName"
-              (keydown.enter)="confirmCreate()"
-              (keydown.escape)="cancelCreate()"
-              (blur)="onInputBlur()"
-            />
+            <p class="text-[var(--text-muted)] text-xs mt-4">
+              Open a folder to start working on your novel
+            </p>
           </div>
         }
-        
-        <!-- File tree -->
-        @if (projectExpanded() && projectState.fileTree()) {
-          <div class="flex-1 overflow-y-auto pl-2">
-            <app-file-tree [node]="projectState.fileTree()!" [depth]="0" />
-          </div>
-        }
-      } @else {
-        <!-- No folder opened -->
-        <div class="flex flex-col items-center justify-center flex-1 px-4 text-center">
-          <span class="material-icons text-5xl text-[var(--border-color)] mb-4">folder_open</span>
-          <p class="text-[var(--text-secondary)] text-sm mb-4">You have not yet opened a folder.</p>
-          <button
-            class="w-full px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-inverse)] text-sm rounded transition-colors"
-            (click)="onOpenProject()"
-          >
-            Open Folder
-          </button>
-          <p class="text-[var(--text-muted)] text-xs mt-4">
-            Open a folder to start working on your novel
-          </p>
-        </div>
+      } 
+      
+      <!-- Search View -->
+      @if (projectState.activeSidebarView() === 'search') {
+        <app-search-panel class="flex-1 overflow-hidden" />
       }
     </div>
     
