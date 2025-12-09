@@ -29,7 +29,7 @@ import { WelcomeComponent } from "../welcome/welcome.component";
       <!-- Tab bar -->
       @if (projectState.openedFiles().length > 0) {
       <div
-        class="flex items-center bg-[var(--bg-secondary)] border-b border-[var(--border-color)] min-h-[35px] overflow-x-auto"
+        class="flex items-center bg-[var(--bg-secondary)] border-b border-[var(--border-color)] h-9 overflow-x-auto"
       >
         @for (file of projectState.openedFiles(); track file.path) {
         <div

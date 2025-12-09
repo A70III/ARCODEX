@@ -10,7 +10,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
   template: `
     <div
       data-tauri-drag-region
-      class="flex items-center justify-between h-[32px] bg-[var(--bg-primary)] select-none border-b border-[var(--border-color)]"
+      class="flex items-center justify-between h-9 bg-[var(--bg-primary)] select-none border-b border-[var(--border-color)]"
     >
       <!-- Left: Logo & Menus -->
       <div class="flex items-center h-full pl-2">
@@ -22,7 +22,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
         <div class="flex items-center h-full -ml-1">
           <div class="relative group h-full flex items-center">
             <button
-              class="px-2.5 h-[22px] rounded-sm text-[11px] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors"
+              class="px-3 h-[26px] rounded-sm text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors"
               (click)="toggleMenu('file', $event)"
             >
               File
@@ -65,7 +65,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
           <div class="relative group h-full flex items-center">
             <button
-              class="px-2.5 h-[22px] rounded-sm text-[11px] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors"
+              class="px-3 h-[26px] rounded-sm text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors"
               (click)="toggleMenu('edit', $event)"
             >
               Edit
@@ -96,7 +96,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
           <div class="relative group h-full flex items-center">
             <button
-              class="px-2.5 h-[22px] rounded-sm text-[11px] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors"
+              class="px-3 h-[26px] rounded-sm text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors"
               (click)="toggleMenu('view', $event)"
             >
               View
@@ -125,7 +125,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
       </div>
 
       <!-- Center: Title -->
-      <div class="absolute left-1/2 transform -translate-x-1/2 text-xs text-[var(--text-secondary)] pointer-events-none select-none">
+      <div class="absolute left-1/2 transform -translate-x-1/2 text-[13px] text-[var(--text-secondary)] pointer-events-none select-none">
         @if (projectState.projectName()) {
           <span>{{ projectState.projectTitle() }} - Arc</span>
         }

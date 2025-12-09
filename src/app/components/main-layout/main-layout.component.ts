@@ -43,9 +43,9 @@ import { SettingsService } from '../../services/settings.service';
           <app-activity-bar />
         }
         
-        <!-- Sidebar (250px) - hidden in focus mode or codex mode -->
+        <!-- Sidebar (Responsive width) - hidden in focus mode or codex mode -->
         @if (!projectState.focusMode() && projectState.sidebarVisible() && projectState.activeSidebarView() !== 'codex') {
-          <app-sidebar class="w-[250px] flex-shrink-0" />
+          <app-sidebar class="w-[260px] lg:w-[300px] flex-shrink-0 transition-all duration-200" />
         }
         
         <!-- Codex Library - full area when active -->
@@ -56,9 +56,9 @@ import { SettingsService } from '../../services/settings.service';
           <app-editor class="flex-1 min-w-0 overflow-hidden" />
         }
         
-        <!-- Info Panel / Right Sidebar (280px) - hidden in focus mode or codex mode -->
+        <!-- Info Panel / Right Sidebar (Responsive width) - hidden in focus mode or codex mode -->
         @if (!projectState.focusMode() && projectState.infoPanelVisible() && projectState.activeSidebarView() !== 'codex') {
-          <app-info-panel class="w-[280px] flex-shrink-0" />
+          <app-info-panel class="w-[280px] lg:w-[320px] flex-shrink-0 transition-all duration-200" />
         }
 
         <!-- Delete Confirmation Modal -->

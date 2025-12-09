@@ -25,7 +25,7 @@ import { ChaptersComponent } from "../chapters/chapters.component";
       @if (projectState.activeSidebarView() === 'explorer') {
       <!-- Header -->
       <div
-        class="flex items-center justify-between px-4 py-2 text-[11px] font-medium text-[var(--text-secondary)] tracking-wide uppercase"
+        class="flex items-center justify-between px-4 py-2 text-xs font-medium text-[var(--text-secondary)] tracking-wide uppercase"
       >
         <span>Explorer</span>
       </div>
