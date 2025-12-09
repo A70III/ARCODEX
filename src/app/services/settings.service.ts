@@ -1,6 +1,6 @@
-import { Injectable, signal, computed, effect } from '@angular/core';
+import { Injectable, signal, computed, effect, inject } from '@angular/core';
 
-export type ThemeType = 'dark' | 'light' | 'nord' | 'dracula' | 'solarized';
+export type ThemeType = 'dark' | 'light' | 'nord' | 'dracula' | 'dim';
 
 export interface AppSettings {
   // Page 1: Appearance
@@ -34,13 +34,17 @@ export class SettingsService {
   private _settings = signal<AppSettings>(this.loadSettings());
   readonly settings = this._settings.asReadonly();
   
+  // Auto-save timer
+  private autoSaveTimer: number | null = null;
+  private autoSaveCallback: (() => void) | null = null;
+  
   // Theme definitions
   readonly themes: { id: ThemeType; name: string; colors: { bg: string; bgSecondary: string; text: string; accent: string } }[] = [
     { id: 'dark', name: 'Dark', colors: { bg: '#1e1e1e', bgSecondary: '#252526', text: '#cccccc', accent: '#007acc' } },
     { id: 'light', name: 'Light', colors: { bg: '#ffffff', bgSecondary: '#f3f3f3', text: '#333333', accent: '#0066cc' } },
     { id: 'nord', name: 'Nord', colors: { bg: '#2e3440', bgSecondary: '#3b4252', text: '#eceff4', accent: '#88c0d0' } },
     { id: 'dracula', name: 'Dracula', colors: { bg: '#282a36', bgSecondary: '#44475a', text: '#f8f8f2', accent: '#bd93f9' } },
-    { id: 'solarized', name: 'Solarized', colors: { bg: '#002b36', bgSecondary: '#073642', text: '#839496', accent: '#268bd2' } },
+    { id: 'dim', name: 'Dim', colors: { bg: '#1d232a', bgSecondary: '#242b33', text: '#b8c0c8', accent: '#58a6ff' } },
   ];
   
   // Available system fonts (common ones)
@@ -61,6 +65,7 @@ export class SettingsService {
   // Computed editor styles
   readonly editorFontFamily = computed(() => this._settings().editorFont);
   readonly editorFontSize = computed(() => this._settings().editorFontSize);
+  readonly showLineNumbers = computed(() => this._settings().showLineNumbers);
   readonly currentTheme = computed(() => {
     const themeId = this._settings().theme;
     return this.themes.find(t => t.id === themeId) || this.themes[0];
@@ -72,6 +77,9 @@ export class SettingsService {
       const settings = this._settings();
       this.saveSettings(settings);
     });
+    
+    // Initialize theme on construction
+    this.applyTheme(this._settings().theme);
   }
   
   // Dialog controls
@@ -103,22 +111,49 @@ export class SettingsService {
   
   setAutoSaveInterval(seconds: number): void {
     this.updateSettings({ autoSaveInterval: Math.max(0, seconds) });
+    this.restartAutoSave();
   }
   
   setShowLineNumbers(show: boolean): void {
     this.updateSettings({ showLineNumbers: show });
   }
   
-  // Theme application
-  private applyTheme(themeId: ThemeType): void {
-    const theme = this.themes.find(t => t.id === themeId);
-    if (!theme) return;
+  // Auto-save management
+  registerAutoSaveCallback(callback: () => void): void {
+    this.autoSaveCallback = callback;
+    this.restartAutoSave();
+  }
+  
+  unregisterAutoSaveCallback(): void {
+    this.autoSaveCallback = null;
+    this.stopAutoSave();
+  }
+  
+  private restartAutoSave(): void {
+    this.stopAutoSave();
     
-    const root = document.documentElement;
-    root.style.setProperty('--bg-primary', theme.colors.bg);
-    root.style.setProperty('--bg-secondary', theme.colors.bgSecondary);
-    root.style.setProperty('--text-primary', theme.colors.text);
-    root.style.setProperty('--accent', theme.colors.accent);
+    const interval = this._settings().autoSaveInterval;
+    if (interval > 0 && this.autoSaveCallback) {
+      this.autoSaveTimer = window.setInterval(() => {
+        console.log('[Auto-save] Saving...');
+        this.autoSaveCallback?.();
+      }, interval * 1000);
+      console.log(`[Auto-save] Enabled: every ${interval} seconds`);
+    }
+  }
+  
+  private stopAutoSave(): void {
+    if (this.autoSaveTimer !== null) {
+      window.clearInterval(this.autoSaveTimer);
+      this.autoSaveTimer = null;
+      console.log('[Auto-save] Disabled');
+    }
+  }
+  
+  // Theme application using data-theme attribute
+  private applyTheme(themeId: ThemeType): void {
+    document.documentElement.setAttribute('data-theme', themeId);
+    console.log(`[Theme] Applied: ${themeId}`);
   }
   
   // Persistence
@@ -142,7 +177,7 @@ export class SettingsService {
     }
   }
   
-  // Initialize theme on app start
+  // Initialize theme on app start (call from app component)
   initializeTheme(): void {
     this.applyTheme(this._settings().theme);
   }

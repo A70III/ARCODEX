@@ -36,6 +36,7 @@
     "@angular/cli": "^20.1.4",
     "@angular/compiler-cli": "^20.1.4",
     "@tauri-apps/cli": "^2",
+    "daisyui": "^5.5.8",
     "typescript": "~5.8.3"
   }
 }

@@ -208,7 +208,7 @@ interface ShortcutItem {
                   </div>
                   
                   <div class="mt-8 text-xs text-[#6e6e6e]">
-                    Built with Angular + Tauri
+                    Build For My Dream Walking On The Moon.
                   </div>
                 </div>
               }

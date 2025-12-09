@@ -1,4 +1,16 @@
 @import "tailwindcss";
+@plugin "daisyui";
+
+/* DaisyUI Theme Configuration */
+@theme {
+  --color-base-100: oklch(var(--b1));
+  --color-base-200: oklch(var(--b2));
+  --color-base-300: oklch(var(--b3));
+  --color-base-content: oklch(var(--bc));
+  --color-primary: oklch(var(--p));
+  --color-primary-content: oklch(var(--pc));
+  --color-accent: oklch(var(--a));
+}
 
 :root {
   --bg-primary: #1e1e1e;
@@ -12,6 +24,55 @@
   --text-muted: #6e6e6e;
   --accent: #007acc;
   --accent-hover: #1c8ad4;
+}
+
+/* Theme-specific CSS variable overrides */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f3f3f3;
+  --bg-tertiary: #e8e8e8;
+  --bg-hover: #d4d4d4;
+  --border-color: #e0e0e0;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  --accent: #0066cc;
+}
+
+[data-theme="nord"] {
+  --bg-primary: #2e3440;
+  --bg-secondary: #3b4252;
+  --bg-tertiary: #434c5e;
+  --bg-hover: #4c566a;
+  --border-color: #4c566a;
+  --text-primary: #eceff4;
+  --text-secondary: #d8dee9;
+  --text-muted: #a3aab8;
+  --accent: #88c0d0;
+}
+
+[data-theme="dracula"] {
+  --bg-primary: #282a36;
+  --bg-secondary: #44475a;
+  --bg-tertiary: #4e5269;
+  --bg-hover: #6272a4;
+  --border-color: #44475a;
+  --text-primary: #f8f8f2;
+  --text-secondary: #e0e0e0;
+  --text-muted: #6272a4;
+  --accent: #bd93f9;
+}
+
+[data-theme="dim"] {
+  --bg-primary: #1d232a;
+  --bg-secondary: #242b33;
+  --bg-tertiary: #2a323c;
+  --bg-hover: #3b4654;
+  --border-color: #3b4654;
+  --text-primary: #b8c0c8;
+  --text-secondary: #8b949e;
+  --text-muted: #6b737d;
+  --accent: #58a6ff;
 }
 
 * {

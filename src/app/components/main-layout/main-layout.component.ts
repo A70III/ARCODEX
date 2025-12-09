@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, signal } from '@angular/core';
+import { Component, HostListener, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../header/header.component';
 import { ActivityBarComponent } from '../activity-bar/activity-bar.component';
@@ -76,7 +76,7 @@ import { SettingsService } from '../../services/settings.service';
     }
   `]
 })
-export class MainLayoutComponent {
+export class MainLayoutComponent implements OnInit, OnDestroy {
   projectState = inject(ProjectStateService);
   settingsService = inject(SettingsService);
   
@@ -84,8 +84,15 @@ export class MainLayoutComponent {
   // sidebarVisible -> projectState.sidebarVisible
   // infoPanelVisible -> projectState.infoPanelVisible
 
-  constructor() {
-    // No need for event listeners anymore as state is shared
+  ngOnInit(): void {
+    // Register auto-save callback
+    this.settingsService.registerAutoSaveCallback(() => {
+      this.projectState.saveAllFiles();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.settingsService.unregisterAutoSaveCallback();
   }
 
   @HostListener('window:keydown', ['$event'])

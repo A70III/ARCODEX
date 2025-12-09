@@ -1,4 +1,4 @@
-import { Component, inject, ElementRef, ViewChild, OnDestroy, effect, signal, Output, EventEmitter } from '@angular/core';
+import { Component, inject, ElementRef, ViewChild, OnDestroy, effect, signal, computed, Output, EventEmitter } from '@angular/core';
 import { ProjectStateService } from '../../services/project-state.service';
 import { SettingsService } from '../../services/settings.service';
 import { Editor } from '@tiptap/core';
@@ -142,11 +142,21 @@ import { WelcomeComponent } from '../welcome/welcome.component';
         @if (projectState.activeFile()) {
           <div class="h-full p-6 max-w-4xl mx-auto">
             <div 
-              #editorContainer 
-              class="editor-container h-full"
+              class="editor-wrapper h-full flex"
               [style.--editor-font]="settingsService.editorFontFamily()"
               [style.--editor-font-size.px]="settingsService.editorFontSize()"
-            ></div>
+            >
+              <!-- Line Numbers Gutter -->
+              @if (settingsService.showLineNumbers()) {
+                <div class="line-numbers-gutter">
+                  @for (line of lineNumbers(); track line) {
+                    <div class="line-number">{{ line }}</div>
+                  }
+                </div>
+              }
+              <!-- Editor Container -->
+              <div #editorContainer class="editor-container flex-1 h-full"></div>
+            </div>
           </div>
         } @else {
           <app-welcome class="h-full" />
@@ -182,6 +192,29 @@ import { WelcomeComponent } from '../welcome/welcome.component';
     
     .toolbar-btn .material-icons {
       font-size: 18px;
+    }
+    
+    .editor-wrapper {
+      min-height: 100%;
+    }
+    
+    .line-numbers-gutter {
+      width: 48px;
+      flex-shrink: 0;
+      padding-top: 0;
+      padding-right: 8px;
+      text-align: right;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+      font-size: var(--editor-font-size, 16px);
+      line-height: 1.9;
+      color: #6e6e6e;
+      user-select: none;
+      border-right: 1px solid #3c3c3c;
+      margin-right: 16px;
+    }
+    
+    .line-number {
+      height: calc(var(--editor-font-size, 16px) * 1.9);
     }
     
     .editor-container {
@@ -295,6 +328,13 @@ export class EditorComponent implements OnDestroy {
   private currentFilePath = '';
   private isUpdatingFromService = false;
   private editorState = signal({ bold: false, italic: false });
+  
+  // Line numbers - computed from editor content
+  private _lineCount = signal(1);
+  readonly lineNumbers = computed(() => {
+    const count = Math.max(this._lineCount(), 20); // minimum 20 lines for visual consistency
+    return Array.from({ length: count }, (_, i) => i + 1);
+  });
 
   constructor() {
     effect(() => {
@@ -380,8 +420,13 @@ export class EditorComponent implements OnDestroy {
           class: 'tiptap',
         },
       },
+      onCreate: ({ editor }) => {
+        this.updateLineCount(editor);
+      },
       onUpdate: ({ editor }) => {
         if (this.isUpdatingFromService) return;
+        
+        this.updateLineCount(editor);
         
         const activeFile = this.projectState.activeFile();
         if (activeFile) {
@@ -390,6 +435,20 @@ export class EditorComponent implements OnDestroy {
         }
       },
     });
+  }
+
+  private updateLineCount(editor: Editor): void {
+    // Count block-level nodes (paragraphs, headings, lists, etc.)
+    const doc = editor.state.doc;
+    let lineCount = 0;
+    doc.descendants((node) => {
+      if (node.isBlock && node.content.size > 0) {
+        lineCount++;
+      }
+      return true;
+    });
+    // Minimum of 1 line
+    this._lineCount.set(Math.max(1, lineCount));
   }
 
   private destroyEditor(): void {
