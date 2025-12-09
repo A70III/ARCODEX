@@ -1,5 +1,6 @@
 import { Component, inject, ElementRef, ViewChild, OnDestroy, effect, signal, Output, EventEmitter } from '@angular/core';
 import { ProjectStateService } from '../../services/project-state.service';
+import { SettingsService } from '../../services/settings.service';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -140,7 +141,12 @@ import { WelcomeComponent } from '../welcome/welcome.component';
       <div class="flex-1 overflow-auto" (keydown)="onKeyDown($event)">
         @if (projectState.activeFile()) {
           <div class="h-full p-6 max-w-4xl mx-auto">
-            <div #editorContainer class="editor-container h-full"></div>
+            <div 
+              #editorContainer 
+              class="editor-container h-full"
+              [style.--editor-font]="settingsService.editorFontFamily()"
+              [style.--editor-font-size.px]="settingsService.editorFontSize()"
+            ></div>
           </div>
         } @else {
           <app-welcome class="h-full" />
@@ -185,8 +191,8 @@ import { WelcomeComponent } from '../welcome/welcome.component';
     :host ::ng-deep .tiptap {
       outline: none;
       min-height: 100%;
-      font-family: 'Georgia', 'Times New Roman', serif;
-      font-size: 16px;
+      font-family: var(--editor-font, 'Georgia'), 'Times New Roman', serif;
+      font-size: var(--editor-font-size, 16px);
       line-height: 1.9;
       color: #d4d4d4;
       padding-bottom: 200px;
@@ -284,6 +290,7 @@ export class EditorComponent implements OnDestroy {
   @ViewChild('editorContainer') editorContainer?: ElementRef<HTMLDivElement>;
   
   projectState = inject(ProjectStateService);
+  settingsService = inject(SettingsService);
   private editor: Editor | null = null;
   private currentFilePath = '';
   private isUpdatingFromService = false;

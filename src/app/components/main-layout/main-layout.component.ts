@@ -7,7 +7,9 @@ import { EditorComponent } from '../editor/editor.component';
 import { StatusBarComponent } from '../status-bar/status-bar.component';
 import { InfoPanelComponent } from '../info-panel/info-panel.component';
 import { ConfirmationModalComponent } from '../ui/confirmation-modal.component';
+import { SettingsDialogComponent } from '../ui/settings-dialog.component';
 import { ProjectStateService } from '../../services/project-state.service';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -20,7 +22,8 @@ import { ProjectStateService } from '../../services/project-state.service';
     EditorComponent,
     StatusBarComponent,
     InfoPanelComponent,
-    ConfirmationModalComponent
+    ConfirmationModalComponent,
+    SettingsDialogComponent
   ],
   template: `
     <div class="flex flex-col h-screen w-screen overflow-hidden bg-[#1e1e1e]">
@@ -54,6 +57,11 @@ import { ProjectStateService } from '../../services/project-state.service';
             (cancel)="projectState.cancelDelete()"
           />
         }
+        
+        <!-- Settings Dialog -->
+        @if (settingsService.dialogOpen()) {
+          <app-settings-dialog />
+        }
       </div>
       
       <!-- Status Bar -->
@@ -70,6 +78,7 @@ import { ProjectStateService } from '../../services/project-state.service';
 })
 export class MainLayoutComponent {
   projectState = inject(ProjectStateService);
+  settingsService = inject(SettingsService);
   
   // Use signals from service directly in template
   // sidebarVisible -> projectState.sidebarVisible

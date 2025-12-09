@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { SettingsService } from '../../services/settings.service';
 
 interface ActivityItem {
   icon: string;
@@ -40,6 +41,7 @@ interface ActivityItem {
           <button
             class="w-12 h-12 flex items-center justify-center text-[#858585] hover:text-[#cccccc] transition-colors"
             [title]="item.label"
+            (click)="onBottomItemClick(item.id)"
           >
             <span class="material-icons text-2xl">{{ item.icon }}</span>
           </button>
@@ -49,6 +51,8 @@ interface ActivityItem {
   `
 })
 export class ActivityBarComponent {
+  private settingsService = inject(SettingsService);
+  
   activeItem = signal('explorer');
 
   topItems: ActivityItem[] = [
@@ -62,5 +66,11 @@ export class ActivityBarComponent {
 
   setActive(id: string): void {
     this.activeItem.set(id);
+  }
+
+  onBottomItemClick(id: string): void {
+    if (id === 'settings') {
+      this.settingsService.openDialog();
+    }
   }
 }
