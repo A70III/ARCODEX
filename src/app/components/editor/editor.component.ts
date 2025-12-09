@@ -28,7 +28,7 @@ import { WelcomeComponent } from '../welcome/welcome.component';
               (click)="onTabClick(file.path)"
             >
               <span class="material-icons text-sm text-[var(--info)]">description</span>
-              <span>{{ file.name }}</span>
+              <span class="text-[var(--text-primary)]">{{ file.name }}</span>
               @if (file.isDirty) {
                 <span class="w-2 h-2 rounded-full bg-white ml-1"></span>
               }
