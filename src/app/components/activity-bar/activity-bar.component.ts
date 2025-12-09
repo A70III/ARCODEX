@@ -11,19 +11,19 @@ interface ActivityItem {
   selector: 'app-activity-bar',
   standalone: true,
   template: `
-    <div class="flex flex-col h-full w-12 bg-[#333333] border-r border-[#3c3c3c]">
+    <div class="flex flex-col h-full w-12 bg-[var(--bg-secondary)] border-r border-[var(--border-color)]">
       <!-- Top icons -->
       <div class="flex flex-col items-center pt-1">
         @for (item of topItems; track item.id) {
           <button
-            class="w-12 h-12 flex items-center justify-center text-[#858585] hover:text-[#cccccc] transition-colors relative"
-            [class.text-white]="activeItem() === item.id"
+            class="w-12 h-12 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors relative"
+            [class.text-[var(--text-inverse)]]="activeItem() === item.id"
             [class.before:absolute]="activeItem() === item.id"
             [class.before:left-0]="activeItem() === item.id"
             [class.before:top-0]="activeItem() === item.id"
             [class.before:bottom-0]="activeItem() === item.id"
             [class.before:w-0.5]="activeItem() === item.id"
-            [class.before:bg-white]="activeItem() === item.id"
+            [class.before:bg-[var(--text-inverse)]]="activeItem() === item.id"
             (click)="setActive(item.id)"
             [title]="item.label"
           >
@@ -39,7 +39,7 @@ interface ActivityItem {
       <div class="flex flex-col items-center pb-2">
         @for (item of bottomItems; track item.id) {
           <button
-            class="w-12 h-12 flex items-center justify-center text-[#858585] hover:text-[#cccccc] transition-colors"
+            class="w-12 h-12 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             [title]="item.label"
             (click)="onBottomItemClick(item.id)"
           >

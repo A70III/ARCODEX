@@ -8,9 +8,9 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [ShortcutsComponent, CommonModule],
   template: `
-    <div class="flex flex-col h-full bg-[#252526] border-l border-[#3c3c3c]">
+    <div class="flex flex-col h-full bg-[var(--bg-secondary)] border-l border-[var(--border-color)]">
       <!-- Header -->
-      <div class="flex items-center px-4 py-2 text-[11px] font-medium text-[#bbbbbb] tracking-wide uppercase border-b border-[#3c3c3c]">
+      <div class="flex items-center px-4 py-2 text-[11px] font-medium text-[var(--text-secondary)] tracking-wide uppercase border-b border-[var(--border-color)]">
         <span>Document Info</span>
       </div>
       
@@ -21,10 +21,10 @@ import { CommonModule } from '@angular/common';
           <div class="space-y-4">
             <!-- Status -->
             <div class="flex items-center gap-2">
-              <span class="material-icons text-base" [class.text-green-400]="!file.isDirty" [class.text-yellow-400]="file.isDirty">
+              <span class="material-icons text-base" [class.text-[var(--success)]]="!file.isDirty" [class.text-[var(--warning)]]="file.isDirty">
                 {{ file.isDirty ? 'edit' : 'check_circle' }}
               </span>
-              <span class="text-sm text-[#cccccc]">
+              <span class="text-sm text-[var(--text-primary)]">
                 {{ file.isDirty ? 'Unsaved changes' : 'All changes saved' }}
               </span>
             </div>
@@ -32,34 +32,34 @@ import { CommonModule } from '@angular/common';
             <!-- File Details -->
             <div class="space-y-2 text-sm">
               <div class="flex items-start gap-2">
-                <span class="material-icons text-base text-[#858585]">description</span>
+                <span class="material-icons text-base text-[var(--text-secondary)]">description</span>
                 <div class="flex-1 min-w-0">
-                  <div class="text-[#858585] text-xs mb-0.5">File Name</div>
-                  <div class="text-[#cccccc] truncate">{{ file.name }}</div>
+                  <div class="text-[var(--text-secondary)] text-xs mb-0.5">File Name</div>
+                  <div class="text-[var(--text-primary)] truncate">{{ file.name }}</div>
                 </div>
               </div>
               
               <div class="flex items-start gap-2">
-                <span class="material-icons text-base text-[#858585]">folder</span>
+                <span class="material-icons text-base text-[var(--text-secondary)]">folder</span>
                 <div class="flex-1 min-w-0">
-                  <div class="text-[#858585] text-xs mb-0.5">Path</div>
-                  <div class="text-[#cccccc] text-xs break-all">{{ file.path }}</div>
+                  <div class="text-[var(--text-secondary)] text-xs mb-0.5">Path</div>
+                  <div class="text-[var(--text-primary)] text-xs break-all">{{ file.path }}</div>
                 </div>
               </div>
               
               <div class="flex items-start gap-2">
-                <span class="material-icons text-base text-[#858585]">text_fields</span>
+                <span class="material-icons text-base text-[var(--text-secondary)]">text_fields</span>
                 <div class="flex-1 min-w-0">
-                  <div class="text-[#858585] text-xs mb-0.5">Word Count</div>
-                  <div class="text-[#cccccc]">{{ getWordCount(file.content) }} words</div>
+                  <div class="text-[var(--text-secondary)] text-xs mb-0.5">Word Count</div>
+                  <div class="text-[var(--text-primary)]">{{ getWordCount(file.content) }} words</div>
                 </div>
               </div>
               
               <div class="flex items-start gap-2">
-                <span class="material-icons text-base text-[#858585]">format_list_numbered</span>
+                <span class="material-icons text-base text-[var(--text-secondary)]">format_list_numbered</span>
                 <div class="flex-1 min-w-0">
-                  <div class="text-[#858585] text-xs mb-0.5">Character Count</div>
-                  <div class="text-[#cccccc]">{{ getCharCount(file.content) }} characters</div>
+                  <div class="text-[var(--text-secondary)] text-xs mb-0.5">Character Count</div>
+                  <div class="text-[var(--text-primary)]">{{ getCharCount(file.content) }} characters</div>
                 </div>
               </div>
             </div>
@@ -69,7 +69,7 @@ import { CommonModule } from '@angular/common';
           </div>
         } @else {
           <!-- No file open -->
-          <div class="flex flex-col items-center justify-center p-8 text-center text-[#6e6e6e]">
+          <div class="flex flex-col items-center justify-center p-8 text-center text-[var(--text-muted)]">
             <span class="material-icons text-4xl mb-2 opacity-50">info</span>
             <p class="text-sm">Open a file to see document info</p>
           </div>
@@ -82,8 +82,8 @@ import { CommonModule } from '@angular/common';
       
       <!-- Project Info Footer -->
       @if (projectState.currentFolderPath()) {
-        <div class="p-3 border-t border-[#3c3c3c] bg-[#1e1e1e]">
-          <div class="flex items-center gap-2 text-xs text-[#858585]">
+        <div class="p-3 border-t border-[var(--border-color)] bg-[var(--bg-primary)]">
+          <div class="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
             <span class="material-icons text-sm">folder_open</span>
             <span class="truncate">{{ projectState.projectName() }}</span>
           </div>

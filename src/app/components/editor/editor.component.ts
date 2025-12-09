@@ -14,26 +14,26 @@ import { WelcomeComponent } from '../welcome/welcome.component';
   standalone: true,
   imports: [WelcomeComponent],
   template: `
-    <div class="flex flex-col h-full bg-[#1e1e1e]">
+    <div class="flex flex-col h-full bg-[var(--bg-primary)]">
       <!-- Tab bar -->
       @if (projectState.openedFiles().length > 0) {
-        <div class="flex items-center bg-[#252526] border-b border-[#3c3c3c] min-h-[35px] overflow-x-auto">
+        <div class="flex items-center bg-[var(--bg-secondary)] border-b border-[var(--border-color)] min-h-[35px] overflow-x-auto">
           @for (file of projectState.openedFiles(); track file.path) {
             <div 
-              class="group flex items-center gap-1 px-3 py-1.5 border-r border-[#3c3c3c] cursor-pointer text-sm whitespace-nowrap"
-              [class.bg-[#1e1e1e]]="projectState.activeFilePath() === file.path"
-              [class.text-white]="projectState.activeFilePath() === file.path"
-              [class.bg-[#2d2d2d]]="projectState.activeFilePath() !== file.path"
-              [class.text-[#969696]]="projectState.activeFilePath() !== file.path"
+              class="group flex items-center gap-1 px-3 py-1.5 border-r border-[var(--border-color)] cursor-pointer text-sm whitespace-nowrap"
+              [class.bg-[var(--bg-primary)]]="projectState.activeFilePath() === file.path"
+              [class.text-[var(--text-inverse)]]="projectState.activeFilePath() === file.path"
+              [class.bg-[var(--bg-tertiary)]]="projectState.activeFilePath() !== file.path"
+              [class.text-[var(--text-secondary)]]="projectState.activeFilePath() !== file.path"
               (click)="onTabClick(file.path)"
             >
-              <span class="material-icons text-sm text-[#519aba]">description</span>
+              <span class="material-icons text-sm text-[var(--info)]">description</span>
               <span>{{ file.name }}</span>
               @if (file.isDirty) {
                 <span class="w-2 h-2 rounded-full bg-white ml-1"></span>
               }
               <button 
-                class="ml-1 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-[#3c3c3c] transition-opacity"
+                class="ml-1 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--bg-hover)] transition-opacity"
                 (click)="onCloseTab($event, file.path)"
               >
                 <span class="material-icons text-sm">close</span>
@@ -45,9 +45,9 @@ import { WelcomeComponent } from '../welcome/welcome.component';
       
       <!-- Formatting Toolbar -->
       @if (projectState.activeFile()) {
-        <div class="flex items-center gap-1 px-2 py-1.5 bg-[#2d2d2d] border-b border-[#3c3c3c] flex-wrap">
+        <div class="flex items-center gap-1 px-2 py-1.5 bg-[var(--bg-tertiary)] border-b border-[var(--border-color)] flex-wrap">
           <!-- Text Style Group -->
-          <div class="flex items-center gap-0.5 pr-2 border-r border-[#3c3c3c]">
+          <div class="flex items-center gap-0.5 pr-2 border-r border-[var(--border-color)]">
             <button class="toolbar-btn" [class.active]="isActive('bold')" (click)="toggleBold()" title="Bold (Ctrl+B)">
               <span class="material-icons">format_bold</span>
             </button>
@@ -123,11 +123,11 @@ import { WelcomeComponent } from '../welcome/welcome.component';
           <!-- Save button -->
           <button 
             class="flex items-center gap-1 px-3 py-1 text-sm rounded transition-colors"
-            [class.bg-[#0e639c]]="isDirty()"
-            [class.hover:bg-[#1177bb]]="isDirty()"
-            [class.text-white]="isDirty()"
-            [class.bg-[#3c3c3c]]="!isDirty()"
-            [class.text-[#858585]]="!isDirty()"
+            [class.bg-[var(--accent)]]="isDirty()"
+            [class.hover:bg-[var(--accent-hover)]]="isDirty()"
+            [class.text-[var(--text-inverse)]]="isDirty()"
+            [class.bg-[var(--bg-hover)]]="!isDirty()"
+            [class.text-[var(--text-secondary)]]="!isDirty()"
             (click)="save()"
             title="Save (Ctrl+S)"
           >
@@ -177,17 +177,17 @@ import { WelcomeComponent } from '../welcome/welcome.component';
       width: 28px;
       height: 28px;
       border-radius: 4px;
-      color: #cccccc;
+      color: var(--text-primary);
       transition: all 0.15s;
     }
     
     .toolbar-btn:hover {
-      background-color: #3c3c3c;
+      background-color: var(--bg-hover);
     }
     
     .toolbar-btn.active {
-      background-color: #094771;
-      color: white;
+      background-color: var(--bg-active);
+      color: var(--text-inverse);
     }
     
     .toolbar-btn .material-icons {
@@ -227,7 +227,7 @@ import { WelcomeComponent } from '../welcome/welcome.component';
       font-family: var(--editor-font, 'Georgia'), 'Times New Roman', serif;
       font-size: var(--editor-font-size, 16px);
       line-height: 1.9;
-      color: #d4d4d4;
+      color: var(--text-primary);
       padding-bottom: 200px;
     }
     
@@ -252,16 +252,16 @@ import { WelcomeComponent } from '../welcome/welcome.component';
     :host ::ng-deep .tiptap h1 {
       font-size: 2em;
       font-weight: 600;
-      color: #ffffff;
+      color: var(--text-inverse);
       margin: 1em 0 0.5em;
-      border-bottom: 1px solid #3c3c3c;
+      border-bottom: 1px solid var(--border-color);
       padding-bottom: 0.3em;
     }
     
     :host ::ng-deep .tiptap h2 {
       font-size: 1.6em;
       font-weight: 600;
-      color: #ffffff;
+      color: var(--text-inverse);
       margin: 0.9em 0 0.4em;
     }
     
@@ -273,12 +273,12 @@ import { WelcomeComponent } from '../welcome/welcome.component';
     }
     
     :host ::ng-deep .tiptap strong {
-      color: #ffffff;
+      color: var(--text-inverse);
       font-weight: 600;
     }
     
     :host ::ng-deep .tiptap em {
-      color: #e0e0e0;
+      color: var(--text-primary);
     }
     
     :host ::ng-deep .tiptap u {
@@ -287,14 +287,14 @@ import { WelcomeComponent } from '../welcome/welcome.component';
     
     :host ::ng-deep .tiptap s {
       text-decoration: line-through;
-      color: #888888;
+      color: var(--text-secondary);
     }
     
     :host ::ng-deep .tiptap blockquote {
-      border-left: 3px solid #007acc;
+      border-left: 3px solid var(--accent);
       padding-left: 1em;
       margin-left: 0;
-      color: #a0a0a0;
+      color: var(--text-secondary);
       font-style: italic;
     }
     
@@ -308,7 +308,7 @@ import { WelcomeComponent } from '../welcome/welcome.component';
     }
     
     :host ::ng-deep .tiptap p.is-editor-empty:first-child::before {
-      color: #6e6e6e;
+      color: var(--text-muted);
       content: attr(data-placeholder);
       float: left;
       height: 0;

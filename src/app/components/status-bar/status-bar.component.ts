@@ -7,11 +7,11 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="flex items-center justify-between h-[22px] bg-[#1e1e1e] border-t border-[#3c3c3c] px-2 text-[#cccccc] text-xs select-none">
+    <div class="flex items-center justify-between h-[22px] bg-[var(--bg-primary)] border-t border-[var(--border-color)] px-2 text-[var(--text-primary)] text-xs select-none">
       <!-- Left section -->
       <div class="flex items-center gap-3">
         @if (projectState.currentFolderPath()) {
-          <span class="flex items-center gap-1 cursor-default hover:text-white transition-colors">
+          <span class="flex items-center gap-1 cursor-default hover:text-[var(--text-inverse)] transition-colors">
             <span class="material-icons text-sm">folder</span>
             {{ projectState.projectName() }}
           </span>
@@ -19,7 +19,7 @@ import { CommonModule } from '@angular/common';
         
         @if (projectState.activeFile(); as file) {
           <span class="flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full" [class.bg-green-400]="!file.isDirty" [class.bg-yellow-400]="file.isDirty"></span>
+            <span class="w-2 h-2 rounded-full" [class.bg-[var(--success)]]="!file.isDirty" [class.bg-[var(--warning)]]="file.isDirty"></span>
             {{ file.isDirty ? 'Modified' : 'Saved' }}
           </span>
         }

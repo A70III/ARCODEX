@@ -16,20 +16,20 @@ interface MenuItem {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div data-tauri-drag-region class="flex items-center justify-between h-[32px] bg-[#1e1e1e] select-none border-b border-[#3c3c3c]">
+    <div data-tauri-drag-region class="flex items-center justify-between h-[32px] bg-[var(--bg-primary)] select-none border-b border-[var(--border-color)]">
       <!-- Left: Logo & Menus -->
       <div class="flex items-center h-full pl-2">
         <div class="flex items-center gap-2 mr-3 pointer-events-none">
-          <span class="material-icons text-[#007acc] text-lg">auto_stories</span>
-          <span class="text-xs font-semibold text-[#cccccc] tracking-wide pt-0.5">Tales IDE</span>
+          <span class="material-icons text-[var(--accent)] text-lg">auto_stories</span>
+          <span class="text-xs font-semibold text-[var(--text-primary)] tracking-wide pt-0.5">Tales IDE</span>
         </div>
         
         <!-- Menus (Non-draggable area) -->
         <div class="flex items-center h-full -ml-1">
           <div class="relative group h-full flex items-center">
-            <button class="px-2.5 h-[22px] rounded-sm text-[11px] text-[#cccccc] hover:bg-[#3c3c3c] flex items-center justify-center transition-colors" (click)="toggleMenu('file', $event)">File</button>
+            <button class="px-2.5 h-[22px] rounded-sm text-[11px] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors" (click)="toggleMenu('file', $event)">File</button>
             @if (activeMenu() === 'file') {
-              <div class="absolute top-full left-0 mt-1 w-56 bg-[#252526] border border-[#454545] shadow-[0_4px_10px_rgba(0,0,0,0.5)] rounded-sm py-1 z-50">
+              <div class="absolute top-full left-0 mt-1 w-56 bg-[var(--bg-secondary)] border border-[var(--border-light)] shadow-[0_4px_10px_rgba(0,0,0,0.5)] rounded-sm py-1 z-50">
                 <button class="menu-item" (click)="triggerNewFile()">
                   <span>New File</span><span class="shortcut">Ctrl+N</span>
                 </button>
@@ -58,9 +58,9 @@ interface MenuItem {
           </div>
           
           <div class="relative group h-full flex items-center">
-            <button class="px-2.5 h-[22px] rounded-sm text-[11px] text-[#cccccc] hover:bg-[#3c3c3c] flex items-center justify-center transition-colors" (click)="toggleMenu('edit', $event)">Edit</button>
+            <button class="px-2.5 h-[22px] rounded-sm text-[11px] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors" (click)="toggleMenu('edit', $event)">Edit</button>
             @if (activeMenu() === 'edit') {
-              <div class="absolute top-full left-0 mt-1 w-48 bg-[#252526] border border-[#454545] shadow-lg rounded-sm py-1 z-50">
+              <div class="absolute top-full left-0 mt-1 w-48 bg-[var(--bg-secondary)] border border-[var(--border-light)] shadow-lg rounded-sm py-1 z-50">
                 <button class="menu-item" (click)="triggerEdit('Undo')"><span>Undo</span><span class="shortcut">Ctrl+Z</span></button>
                 <button class="menu-item" (click)="triggerEdit('Redo')"><span>Redo</span><span class="shortcut">Ctrl+Y</span></button>
                 <div class="menu-divider"></div>
@@ -72,9 +72,9 @@ interface MenuItem {
           </div>
 
           <div class="relative group h-full flex items-center">
-            <button class="px-2.5 h-[22px] rounded-sm text-[11px] text-[#cccccc] hover:bg-[#3c3c3c] flex items-center justify-center transition-colors" (click)="toggleMenu('view', $event)">View</button>
+            <button class="px-2.5 h-[22px] rounded-sm text-[11px] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors" (click)="toggleMenu('view', $event)">View</button>
             @if (activeMenu() === 'view') {
-              <div class="absolute top-full left-0 mt-1 w-48 bg-[#252526] border border-[#454545] shadow-lg rounded-sm py-1 z-50">
+              <div class="absolute top-full left-0 mt-1 w-48 bg-[var(--bg-secondary)] border border-[var(--border-light)] shadow-lg rounded-sm py-1 z-50">
                 <button class="menu-item" (click)="toggleSidebar()"><span>Toggle Sidebar</span><span class="shortcut">Ctrl+B</span></button>
                 <button class="menu-item" (click)="toggleInfoPanel()"><span>Toggle Info Panel</span></button>
               </div>
@@ -86,20 +86,20 @@ interface MenuItem {
       <!-- Right: Toggles & Window Controls -->
       <div class="flex items-center h-full">
         <!-- Panel Icons (VS Code style) -->
-        <div class="flex items-center mr-2 px-2 border-r border-[#3c3c3c] h-[16px]">
+        <div class="flex items-center mr-2 px-2 border-r border-[var(--border-color)] h-[16px]">
             <button
-            class="p-1 hover:bg-[#3c3c3c] rounded text-[#858585] hover:text-[#cccccc] transition-colors"
-            [class.text-white]="projectState.sidebarVisible()"
-            [class.bg-[#3c3c3c]]="projectState.sidebarVisible()"
+            class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            [class.text-[var(--text-inverse)]]="projectState.sidebarVisible()"
+            [class.bg-[var(--bg-hover)]]="projectState.sidebarVisible()"
             title="Toggle Sidebar (Ctrl+B)"
             (click)="toggleSidebar()"
             >
               <span class="material-icons text-[18px]">view_sidebar</span> 
             </button>
             <button
-            class="p-1 hover:bg-[#3c3c3c] rounded text-[#858585] hover:text-[#cccccc] transition-colors ml-1"
-            [class.text-white]="projectState.infoPanelVisible()"
-            [class.bg-[#3c3c3c]]="projectState.infoPanelVisible()"
+            class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors ml-1"
+            [class.text-[var(--text-inverse)]]="projectState.infoPanelVisible()"
+            [class.bg-[var(--bg-hover)]]="projectState.infoPanelVisible()"
             title="Toggle Info Panel"
             (click)="toggleInfoPanel()"
             >
@@ -109,19 +109,19 @@ interface MenuItem {
 
         <!-- Window Controls (Windows 11 SCSS) -->
         <div class="flex items-center h-full">
-            <button class="window-control hover:bg-[#3c3c3c]" (click)="minimizeWindow()" title="Minimize">
+            <button class="window-control hover:bg-[var(--bg-hover)]" (click)="minimizeWindow()" title="Minimize">
                <svg width="10" height="10" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M0 5H10" stroke="#cccccc" stroke-width="1"/>
+                  <path d="M0 5H10" [attr.stroke]="'var(--text-primary)'" stroke-width="1"/>
                </svg>
             </button>
-            <button class="window-control hover:bg-[#3c3c3c]" (click)="toggleMaximizeWindow()" title="Maximize">
+            <button class="window-control hover:bg-[var(--bg-hover)]" (click)="toggleMaximizeWindow()" title="Maximize">
                <svg width="10" height="10" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1.5 1.5H8.5V8.5H1.5V1.5Z" stroke="#cccccc" stroke-width="1" fill="none"/>
+                  <path d="M1.5 1.5H8.5V8.5H1.5V1.5Z" [attr.stroke]="'var(--text-primary)'" stroke-width="1" fill="none"/>
                </svg>
             </button>
-            <button class="window-control hover:bg-[#e81123] hover:text-white group" (click)="closeWindow()" title="Close">
+            <button class="window-control hover:bg-[var(--error)] hover:text-white group" (click)="closeWindow()" title="Close">
                <svg width="10" height="10" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 1L9 9M9 1L1 9" stroke="#cccccc" stroke-width="1" class="group-hover:stroke-white"/>
+                  <path d="M1 1L9 9M9 1L1 9" stroke="var(--text-primary)" stroke-width="1" class="group-hover:stroke-white"/>
                </svg>
             </button>
         </div>
@@ -137,23 +137,23 @@ interface MenuItem {
       text-align: left;
       padding: 6px 16px;
       font-size: 11px;
-      color: #cccccc;
+      color: var(--text-primary);
       transition: background-color 0.1s;
     }
     .menu-item:hover {
-      background-color: #094771;
-      color: white;
+      background-color: var(--bg-active);
+      color: var(--text-inverse);
     }
     .menu-item .shortcut {
-      color: #858585;
+      color: var(--text-secondary);
       margin-left: 12px;
     }
     .menu-item:hover .shortcut {
-      color: #dddddd;
+      color: var(--text-primary);
     }
     .menu-divider {
       height: 1px;
-      background-color: #454545;
+      background-color: var(--border-light);
       margin: 4px 0;
     }
     .window-control {

@@ -16,18 +16,18 @@ interface ShortcutItem {
   imports: [CommonModule, FormsModule],
   template: `
     <div class="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center select-none" (click)="onBackdropClick($event)">
-      <div class="bg-[#252526] border border-[#454545] shadow-2xl rounded-lg w-[650px] h-[500px] flex overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="bg-[var(--bg-secondary)] border border-[var(--border-light)] shadow-2xl rounded-lg w-[650px] h-[500px] flex overflow-hidden" (click)="$event.stopPropagation()">
         
         <!-- Sidebar Navigation -->
-        <div class="w-16 bg-[#1e1e1e] border-r border-[#3c3c3c] flex flex-col items-center py-4 gap-2">
+        <div class="w-16 bg-[var(--bg-primary)] border-r border-[var(--border-color)] flex flex-col items-center py-4 gap-2">
           @for (page of pages; track page.id) {
             <button
               class="w-12 h-12 flex items-center justify-center rounded-lg transition-all"
-              [class.bg-[#094771]]="currentPage() === page.id"
-              [class.text-white]="currentPage() === page.id"
-              [class.text-[#858585]]="currentPage() !== page.id"
-              [class.hover:text-white]="currentPage() !== page.id"
-              [class.hover:bg-[#3c3c3c]]="currentPage() !== page.id"
+              [class.bg-[var(--bg-active)]]="currentPage() === page.id"
+              [class.text-[var(--text-inverse)]]="currentPage() === page.id"
+              [class.text-[var(--text-secondary)]]="currentPage() !== page.id"
+              [class.hover:text-[var(--text-inverse)]]="currentPage() !== page.id"
+              [class.hover:bg-[var(--bg-hover)]]="currentPage() !== page.id"
               (click)="setPage(page.id)"
               [title]="page.label"
             >
@@ -39,9 +39,9 @@ interface ShortcutItem {
         <!-- Content Area -->
         <div class="flex-1 flex flex-col">
           <!-- Header -->
-          <div class="flex items-center justify-between px-6 py-4 border-b border-[#3c3c3c]">
-            <span class="text-[#cccccc] font-medium text-lg">{{ getCurrentPageLabel() }}</span>
-            <button class="text-[#858585] hover:text-white p-1 rounded hover:bg-[#3c3c3c] transition-colors" (click)="close()">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--border-color)]">
+            <span class="text-[var(--text-primary)] font-medium text-lg">{{ getCurrentPageLabel() }}</span>
+            <button class="text-[var(--text-secondary)] hover:text-[var(--text-inverse)] p-1 rounded hover:bg-[var(--bg-hover)] transition-colors" (click)="close()">
               <span class="material-icons text-xl">close</span>
             </button>
           </div>
@@ -80,9 +80,9 @@ interface ShortcutItem {
                   
                   <!-- Font -->
                   <div>
-                    <label class="block text-[#cccccc] text-sm font-medium mb-3">ฟอนต์ Editor</label>
+                    <label class="block text-[var(--text-primary)] text-sm font-medium mb-3">ฟอนต์ Editor</label>
                     <select 
-                      class="w-full bg-[#3c3c3c] border border-[#555] rounded-md px-3 py-2 text-[#cccccc] text-sm focus:outline-none focus:border-[#007acc]"
+                      class="w-full bg-[var(--bg-hover)] border border-[var(--border-light)] rounded-md px-3 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent)]"
                       [ngModel]="settingsService.settings().editorFont"
                       (ngModelChange)="settingsService.setFont($event)"
                     >
@@ -90,9 +90,9 @@ interface ShortcutItem {
                         <option [value]="font" [style.font-family]="font">{{ font }}</option>
                       }
                     </select>
-                    <div class="mt-3 p-4 bg-[#1e1e1e] rounded-md border border-[#3c3c3c]">
+                    <div class="mt-3 p-4 bg-[var(--bg-primary)] rounded-md border border-[var(--border-color)]">
                       <p 
-                        class="text-[#cccccc]" 
+                        class="text-[var(--text-primary)]" 
                         [style.font-family]="settingsService.settings().editorFont"
                         [style.font-size.px]="settingsService.settings().editorFontSize"
                       >
@@ -103,21 +103,21 @@ interface ShortcutItem {
                   
                   <!-- Font Size -->
                   <div>
-                    <label class="block text-[#cccccc] text-sm font-medium mb-3">
+                    <label class="block text-[var(--text-primary)] text-sm font-medium mb-3">
                       ขนาดตัวอักษร: {{ settingsService.settings().editorFontSize }}px
                     </label>
                     <div class="flex items-center gap-4">
-                      <span class="text-[#858585] text-xs">12px</span>
+                      <span class="text-[var(--text-secondary)] text-xs">12px</span>
                       <input 
                         type="range" 
                         min="12" 
                         max="32" 
                         step="1"
-                        class="flex-1 accent-[#007acc]"
+                        class="flex-1"
                         [ngModel]="settingsService.settings().editorFontSize"
                         (ngModelChange)="settingsService.setFontSize($event)"
                       />
-                      <span class="text-[#858585] text-xs">32px</span>
+                      <span class="text-[var(--text-secondary)] text-xs">32px</span>
                     </div>
                   </div>
                 </div>
@@ -128,7 +128,7 @@ interface ShortcutItem {
                 <div class="space-y-6">
                   <!-- Auto Save -->
                   <div>
-                    <label class="block text-[#cccccc] text-sm font-medium mb-3">บันทึกอัตโนมัติ</label>
+                    <label class="block text-[var(--text-primary)] text-sm font-medium mb-3">บันทึกอัตโนมัติ</label>
                     <div class="flex items-center gap-3">
                       <label class="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -137,28 +137,28 @@ interface ShortcutItem {
                           [checked]="settingsService.settings().autoSaveInterval > 0"
                           (change)="toggleAutoSave($event)"
                         />
-                        <div class="w-11 h-6 bg-[#3c3c3c] rounded-full peer peer-checked:bg-[#007acc] after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                        <div class="w-11 h-6 bg-[var(--bg-hover)] rounded-full peer peer-checked:bg-[var(--accent)] after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
                       </label>
                       @if (settingsService.settings().autoSaveInterval > 0) {
-                        <span class="text-[#cccccc] text-sm">ทุก</span>
+                        <span class="text-[var(--text-primary)] text-sm">ทุก</span>
                         <input 
                           type="number" 
                           min="5" 
                           max="300"
-                          class="w-20 bg-[#3c3c3c] border border-[#555] rounded px-2 py-1 text-[#cccccc] text-sm text-center focus:outline-none focus:border-[#007acc]"
+                          class="w-20 bg-[var(--bg-hover)] border border-[var(--border-light)] rounded px-2 py-1 text-[var(--text-primary)] text-sm text-center focus:outline-none focus:border-[var(--accent)]"
                           [ngModel]="settingsService.settings().autoSaveInterval"
                           (ngModelChange)="settingsService.setAutoSaveInterval($event)"
                         />
-                        <span class="text-[#cccccc] text-sm">วินาที</span>
+                        <span class="text-[var(--text-primary)] text-sm">วินาที</span>
                       } @else {
-                        <span class="text-[#858585] text-sm">ปิดใช้งาน</span>
+                        <span class="text-[var(--text-secondary)] text-sm">ปิดใช้งาน</span>
                       }
                     </div>
                   </div>
                   
                   <!-- Show Line Numbers -->
                   <div>
-                    <label class="block text-[#cccccc] text-sm font-medium mb-3">แสดงเลขบรรทัด</label>
+                    <label class="block text-[var(--text-primary)] text-sm font-medium mb-3">แสดงเลขบรรทัด</label>
                     <div class="flex items-center gap-3">
                       <label class="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -167,9 +167,9 @@ interface ShortcutItem {
                           [checked]="settingsService.settings().showLineNumbers"
                           (change)="settingsService.setShowLineNumbers(!settingsService.settings().showLineNumbers)"
                         />
-                        <div class="w-11 h-6 bg-[#3c3c3c] rounded-full peer peer-checked:bg-[#007acc] after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                        <div class="w-11 h-6 bg-[var(--bg-hover)] rounded-full peer peer-checked:bg-[var(--accent)] after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
                       </label>
-                      <span class="text-[#858585] text-sm">
+                      <span class="text-[var(--text-secondary)] text-sm">
                         {{ settingsService.settings().showLineNumbers ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
                       </span>
                     </div>
@@ -181,9 +181,9 @@ interface ShortcutItem {
               @case ('shortcuts') {
                 <div class="space-y-3">
                   @for (shortcut of shortcuts; track shortcut.label) {
-                    <div class="flex items-center justify-between py-2 border-b border-[#3c3c3c]">
-                      <span class="text-[#cccccc] text-sm">{{ shortcut.label }}</span>
-                      <kbd class="px-2 py-1 text-xs bg-[#3c3c3c] text-[#e0e0e0] rounded">{{ shortcut.key }}</kbd>
+                    <div class="flex items-center justify-between py-2 border-b border-[var(--border-color)]">
+                      <span class="text-[var(--text-primary)] text-sm">{{ shortcut.label }}</span>
+                      <kbd class="px-2 py-1 text-xs bg-[var(--bg-hover)] text-[var(--text-primary)] rounded">{{ shortcut.key }}</kbd>
                     </div>
                   }
                 </div>
@@ -192,22 +192,22 @@ interface ShortcutItem {
               <!-- Page 4: About -->
               @case ('about') {
                 <div class="flex flex-col items-center justify-center h-full text-center">
-                  <span class="material-icons text-7xl text-[#3c3c3c] mb-4">auto_stories</span>
-                  <h1 class="text-2xl font-semibold text-[#cccccc] mb-2">Tales IDE</h1>
-                  <p class="text-[#858585] mb-6">Your Creative Writing Companion</p>
+                  <span class="material-icons text-7xl text-[var(--border-color)] mb-4">auto_stories</span>
+                  <h1 class="text-2xl font-semibold text-[var(--text-primary)] mb-2">Tales IDE</h1>
+                  <p class="text-[var(--text-secondary)] mb-6">Your Creative Writing Companion</p>
                   
                   <div class="space-y-2 text-sm">
                     <div class="flex items-center justify-center gap-2">
-                      <span class="text-[#858585]">เวอร์ชัน:</span>
-                      <span class="text-[#cccccc]">0.1.0</span>
+                      <span class="text-[var(--text-secondary)]">เวอร์ชัน:</span>
+                      <span class="text-[var(--text-primary)]">0.1.0</span>
                     </div>
                     <div class="flex items-center justify-center gap-2">
-                      <span class="text-[#858585]">ผู้พัฒนา:</span>
-                      <span class="text-[#cccccc]">L2S</span>
+                      <span class="text-[var(--text-secondary)]">ผู้พัฒนา:</span>
+                      <span class="text-[var(--text-primary)]">L2S</span>
                     </div>
                   </div>
                   
-                  <div class="mt-8 text-xs text-[#6e6e6e]">
+                  <div class="mt-8 text-xs text-[var(--text-muted)]">
                     Build For My Dream Walking On The Moon.
                   </div>
                 </div>
@@ -224,7 +224,7 @@ interface ShortcutItem {
     input[type="range"] {
       -webkit-appearance: none;
       height: 6px;
-      background: #3c3c3c;
+      background: var(--bg-hover);
       border-radius: 3px;
     }
     
@@ -232,13 +232,13 @@ interface ShortcutItem {
       -webkit-appearance: none;
       width: 16px;
       height: 16px;
-      background: #007acc;
+      background: var(--accent);
       border-radius: 50%;
       cursor: pointer;
     }
     
     input[type="range"]::-webkit-slider-thumb:hover {
-      background: #1c8ad4;
+      background: var(--accent-hover);
     }
   `]
 })

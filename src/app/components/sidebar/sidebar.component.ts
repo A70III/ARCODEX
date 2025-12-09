@@ -8,21 +8,21 @@ import { FileTreeComponent } from '../file-tree/file-tree.component';
   standalone: true,
   imports: [FileTreeComponent, FormsModule],
   template: `
-    <div class="flex flex-col h-full bg-[#252526] border-r border-[#3c3c3c]" (contextmenu)="onContextMenu($event)">
+    <div class="flex flex-col h-full bg-[var(--bg-secondary)] border-r border-[var(--border-color)]" (contextmenu)="onContextMenu($event)">
       <!-- Header -->
-      <div class="flex items-center justify-between px-4 py-2 text-[11px] font-medium text-[#bbbbbb] tracking-wide uppercase">
+      <div class="flex items-center justify-between px-4 py-2 text-[11px] font-medium text-[var(--text-secondary)] tracking-wide uppercase">
         <span>Explorer</span>
       </div>
       
       <!-- Project section -->
       @if (projectState.currentFolderPath()) {
         <!-- Project name header with actions -->
-        <div class="flex items-center justify-between px-2 py-1 hover:bg-[#2a2d2e] group">
+        <div class="flex items-center justify-between px-2 py-1 hover:bg-[var(--bg-hover)] group">
           <div 
-            class="flex items-center gap-1 text-[11px] font-semibold text-[#cccccc] uppercase cursor-pointer flex-1"
+            class="flex items-center gap-1 text-[11px] font-semibold text-[var(--text-primary)] uppercase cursor-pointer flex-1"
             (click)="toggleProjectExpanded()"
           >
-            <span class="material-icons text-base text-[#cccccc]">
+            <span class="material-icons text-base text-[var(--text-primary)]">
               {{ projectExpanded() ? 'expand_more' : 'chevron_right' }}
             </span>
             <span class="truncate">{{ projectState.projectName() }}</span>
@@ -31,21 +31,21 @@ import { FileTreeComponent } from '../file-tree/file-tree.component';
           <!-- Action buttons - visible on hover -->
           <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <button 
-              class="p-1 hover:bg-[#3c3c3c] rounded text-[#cccccc]"
+              class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
               title="New File"
               (click)="startNewFile($event)"
             >
               <span class="material-icons text-base">note_add</span>
             </button>
             <button 
-              class="p-1 hover:bg-[#3c3c3c] rounded text-[#cccccc]"
+              class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
               title="New Folder"
               (click)="startNewFolder($event)"
             >
               <span class="material-icons text-base">create_new_folder</span>
             </button>
             <button 
-              class="p-1 hover:bg-[#3c3c3c] rounded text-[#cccccc]"
+              class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
               title="Refresh Explorer"
               (click)="onRefresh($event)"
             >
@@ -57,13 +57,13 @@ import { FileTreeComponent } from '../file-tree/file-tree.component';
         <!-- Inline new file/folder input -->
         @if (isCreating()) {
           <div class="flex items-center gap-1 px-2 py-1 ml-4">
-            <span class="material-icons text-base" [class.text-[#dcb67a]]="creatingType() === 'folder'" [class.text-[#519aba]]="creatingType() === 'file'">
+            <span class="material-icons text-base" [class.text-[var(--warning)]]="creatingType() === 'folder'" [class.text-[var(--info)]]="creatingType() === 'file'">
               {{ creatingType() === 'folder' ? 'folder' : 'description' }}
             </span>
             <input
               #newItemInput
               type="text"
-              class="flex-1 bg-[#3c3c3c] border border-[#007acc] text-[#cccccc] text-sm px-2 py-0.5 rounded outline-none"
+              class="flex-1 bg-[var(--bg-hover)] border border-[var(--accent)] text-[var(--text-primary)] text-sm px-2 py-0.5 rounded outline-none"
               [placeholder]="creatingType() === 'folder' ? 'Folder name' : 'File name (e.g., chapter1.md)'"
               [(ngModel)]="newItemName"
               (keydown.enter)="confirmCreate()"
@@ -82,15 +82,15 @@ import { FileTreeComponent } from '../file-tree/file-tree.component';
       } @else {
         <!-- No folder opened -->
         <div class="flex flex-col items-center justify-center flex-1 px-4 text-center">
-          <span class="material-icons text-5xl text-[#3c3c3c] mb-4">folder_open</span>
-          <p class="text-[#969696] text-sm mb-4">You have not yet opened a folder.</p>
+          <span class="material-icons text-5xl text-[var(--border-color)] mb-4">folder_open</span>
+          <p class="text-[var(--text-secondary)] text-sm mb-4">You have not yet opened a folder.</p>
           <button
-            class="w-full px-4 py-2 bg-[#0e639c] hover:bg-[#1177bb] text-white text-sm rounded transition-colors"
+            class="w-full px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-inverse)] text-sm rounded transition-colors"
             (click)="onOpenProject()"
           >
             Open Folder
           </button>
-          <p class="text-[#6e6e6e] text-xs mt-4">
+          <p class="text-[var(--text-muted)] text-xs mt-4">
             Open a folder to start working on your novel
           </p>
         </div>
@@ -100,20 +100,20 @@ import { FileTreeComponent } from '../file-tree/file-tree.component';
     <!-- Context Menu for Root -->
     @if (contextMenu().visible) {
       <div 
-        class="fixed bg-[#252526] border border-[#454545] shadow-lg z-[1000] py-1 min-w-[160px]"
+        class="fixed bg-[var(--bg-secondary)] border border-[var(--border-light)] shadow-lg z-[1000] py-1 min-w-[160px]"
         [style.left.px]="contextMenu().x"
         [style.top.px]="contextMenu().y"
         (click)="$event.stopPropagation()"
       >
         <button 
-          class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
+          class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left"
           (click)="startNewFile($event); contextMenu().visible = false"
         >
           <span class="material-icons text-base">note_add</span>
           New File
         </button>
         <button 
-          class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#cccccc] hover:bg-[#094771] text-left"
+          class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left"
           (click)="startNewFolder($event); contextMenu().visible = false"
         >
           <span class="material-icons text-base">create_new_folder</span>

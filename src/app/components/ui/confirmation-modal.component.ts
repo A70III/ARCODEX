@@ -7,34 +7,34 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   template: `
     <div class="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center select-none">
-      <div class="bg-[#252526] border border-[#454545] shadow-2xl rounded-md min-w-[350px] max-w-[500px]">
+      <div class="bg-[var(--bg-secondary)] border border-[var(--border-light)] shadow-2xl rounded-md min-w-[350px] max-w-[500px]">
         <!-- Header -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-[#3c3c3c]">
-          <span class="text-[#cccccc] font-medium">{{ title }}</span>
-          <button class="text-[#858585] hover:text-white" (click)="onCancel()">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--border-color)]">
+          <span class="text-[var(--text-primary)] font-medium">{{ title }}</span>
+          <button class="text-[var(--text-secondary)] hover:text-[var(--text-inverse)]" (click)="onCancel()">
             <span class="material-icons text-base">close</span>
           </button>
         </div>
         
         <!-- Body -->
-        <div class="p-4 text-[#cccccc] text-sm flex items-start gap-4">
-          <span class="material-icons text-[#007acc] text-3xl mt-1">help_outline</span>
+        <div class="p-4 text-[var(--text-primary)] text-sm flex items-start gap-4">
+          <span class="material-icons text-[var(--accent)] text-3xl mt-1">help_outline</span>
           <div class="mt-1">
              <p>{{ message }}</p>
-             <p class="text-[#858585] text-xs mt-2">This action cannot be undone.</p>
+             <p class="text-[var(--text-secondary)] text-xs mt-2">This action cannot be undone.</p>
           </div>
         </div>
         
         <!-- Footer -->
-        <div class="flex items-center justify-end gap-2 px-4 py-3 bg-[#1e1e1e] border-t border-[#3c3c3c] rounded-b-md">
+        <div class="flex items-center justify-end gap-2 px-4 py-3 bg-[var(--bg-primary)] border-t border-[var(--border-color)] rounded-b-md">
            <button 
-             class="px-4 py-1.5 text-xs text-[#cccccc] bg-[#3c3c3c] hover:bg-[#454545] border border-[#454545] rounded transition-colors"
+             class="px-4 py-1.5 text-xs text-[var(--text-primary)] bg-[var(--bg-hover)] hover:bg-[var(--border-light)] border border-[var(--border-light)] rounded transition-colors"
              (click)="onCancel()"
            >
              Cancel
            </button>
            <button 
-             class="px-4 py-1.5 text-xs text-white bg-[#007acc] hover:bg-[#0062a3] border border-[#007acc] rounded transition-colors"
+             class="px-4 py-1.5 text-xs text-[var(--text-inverse)] bg-[var(--accent)] hover:bg-[var(--accent-hover)] border border-[var(--accent)] rounded transition-colors"
              (click)="onConfirm()"
            >
              Yes, Delete

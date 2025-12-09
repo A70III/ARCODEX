@@ -21,15 +21,15 @@ interface ContextMenuState {
         @if (child.is_dir) {
           <!-- Folder -->
           <div 
-            class="flex items-center gap-1 py-0.5 px-1 cursor-pointer hover:bg-[#2a2d2e] hover:outline hover:outline-1 hover:outline-white/20 rounded-sm text-[#cccccc]"
+            class="flex items-center gap-1 py-0.5 px-1 cursor-pointer hover:bg-[var(--bg-hover)] hover:outline hover:outline-1 hover:outline-white/20 rounded-sm text-[var(--text-primary)]"
             [style.padding-left.px]="depth * 12 + 4"
             (click)="toggleFolder(child.path)"
             (contextmenu)="onContextMenu($event, child)"
           >
-            <span class="material-icons text-sm text-[#cccccc]">
+            <span class="material-icons text-sm text-[var(--text-primary)]">
               {{ isExpanded(child.path) ? 'expand_more' : 'chevron_right' }}
             </span>
-            <span class="material-icons text-base text-[#dcb67a]">
+            <span class="material-icons text-base text-[var(--warning)]">
               {{ isExpanded(child.path) ? 'folder_open' : 'folder' }}
             </span>
             <span class="text-sm truncate select-none pointer-events-none">{{ child.name }}</span>
@@ -39,13 +39,13 @@ interface ContextMenuState {
             <!-- Inline Creation Input -->
             @if (creatingChildState().parentId === child.path) {
               <div class="flex items-center gap-1 py-0.5 pr-2" [style.padding-left.px]="(depth + 1) * 12 + 20">
-                <span class="material-icons text-base" [class.text-[#dcb67a]]="creatingChildState().type === 'folder'" [class.text-[#519aba]]="creatingChildState().type === 'file'">
+                <span class="material-icons text-base" [class.text-[var(--warning)]]="creatingChildState().type === 'folder'" [class.text-[var(--info)]]="creatingChildState().type === 'file'">
                   {{ creatingChildState().type === 'folder' ? 'folder' : 'description' }}
                 </span>
                 <input
                   #newItemInput
                   type="text"
-                  class="flex-1 bg-[#3c3c3c] border border-[#007acc] text-[#cccccc] text-sm px-2 py-0.5 rounded outline-none min-w-[50px]"
+                  class="flex-1 bg-[var(--bg-hover)] border border-[var(--accent)] text-[var(--text-primary)] text-sm px-2 py-0.5 rounded outline-none min-w-[50px]"
                   [placeholder]="creatingChildState().type === 'folder' ? 'Folder Name' : 'File Name'"
                   [(ngModel)]="newItemName"
                   (keydown.enter)="confirmCreate()"
@@ -63,8 +63,8 @@ interface ContextMenuState {
         } @else {
           <!-- File -->
           <div 
-            class="flex items-center gap-1 py-0.5 px-1 cursor-pointer hover:bg-[#2a2d2e] rounded-sm group/file"
-            [class.bg-[#094771]]="isActive(child.path) && renamingNode()?.path !== child.path"
+            class="flex items-center gap-1 py-0.5 px-1 cursor-pointer hover:bg-[var(--bg-hover)] rounded-sm group/file"
+            [class.bg-[var(--bg-active)]]="isActive(child.path) && renamingNode()?.path !== child.path"
             [style.padding-left.px]="depth * 12 + 20"
             (click)="onFileClick(child)"
             (contextmenu)="onContextMenu($event, child)"
@@ -77,7 +77,7 @@ interface ContextMenuState {
                 <input
                 #renameInput
                 type="text"
-                class="flex-1 bg-[#3c3c3c] border border-[#007acc] text-[#cccccc] text-sm px-1 py-0 rounded outline-none min-w-[50px] h-[20px]"
+                class="flex-1 bg-[var(--bg-hover)] border border-[var(--accent)] text-[var(--text-primary)] text-sm px-1 py-0 rounded outline-none min-w-[50px] h-[20px]"
                 [(ngModel)]="renamingNode()!.name"
                 (keydown.enter)="confirmRename()"
                 (keydown.escape)="cancelRename()"
@@ -85,7 +85,7 @@ interface ContextMenuState {
                 (click)="$event.stopPropagation()"
                 />
             } @else {
-                <span class="text-sm truncate text-[#cccccc]" [class.text-white]="isActive(child.path)">{{ child.name }}</span>
+                <span class="text-sm truncate text-[var(--text-primary)]" [class.text-[var(--text-inverse)]]="isActive(child.path)">{{ child.name }}</span>
             }
           </div>
         }
@@ -95,30 +95,30 @@ interface ContextMenuState {
     <!-- Context Menu -->
     @if (contextMenu().visible) {
       <div 
-        class="fixed bg-[#252526] border border-[#454545] shadow-[0_4px_10px_rgba(0,0,0,0.5)] z-[9999] py-1 min-w-[160px] rounded-sm"
+        class="fixed bg-[var(--bg-secondary)] border border-[var(--border-light)] shadow-[0_4px_10px_rgba(0,0,0,0.5)] z-[9999] py-1 min-w-[160px] rounded-sm"
         [style.left.px]="contextMenu().x"
         [style.top.px]="contextMenu().y"
         (click)="$event.stopPropagation()"
       >
         @if (contextMenu().file?.is_dir) {
           <button 
-            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771] text-left transition-colors"
+            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left transition-colors"
             (click)="startCreate('file')"
           >
             <span class="material-icons text-sm">note_add</span>
             New File
           </button>
           <button 
-            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771] text-left transition-colors"
+            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left transition-colors"
             (click)="startCreate('folder')"
           >
             <span class="material-icons text-sm">create_new_folder</span>
             New Folder
           </button>
-          <div class="h-px bg-[#454545] my-1"></div>
+          <div class="h-px bg-[var(--border-light)] my-1"></div>
         } @else {
           <button 
-            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771] text-left transition-colors"
+            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left transition-colors"
             (click)="openFile()"
           >
             <span class="material-icons text-sm">open_in_new</span>
@@ -127,15 +127,15 @@ interface ContextMenuState {
         }
         
         <button 
-          class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771] text-left transition-colors"
+          class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left transition-colors"
           (click)="startRename()"
         >
           <span class="material-icons text-sm">edit</span>
           Rename
         </button>
-        <div class="h-px bg-[#454545] my-1"></div>
+        <div class="h-px bg-[var(--border-light)] my-1"></div>
         <button 
-          class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#f48771] hover:bg-[#5a1d1d] text-left transition-colors"
+          class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--error)] hover:bg-[var(--error)]/20 text-left transition-colors"
           (click)="handleDelete()"
         >
           <span class="material-icons text-sm">delete</span>
@@ -355,9 +355,9 @@ export class FileTreeComponent {
   }
 
   getFileIconClass(fileName: string): string {
-    if (fileName.endsWith('.md')) return 'text-[#519aba]';
-    if (fileName.endsWith('.txt')) return 'text-[#a0a0a0]';
-    if (fileName.endsWith('.json')) return 'text-[#cbcb41]';
-    return 'text-[#a0a0a0]';
+    if (fileName.endsWith('.md')) return 'text-[var(--info)]';
+    if (fileName.endsWith('.txt')) return 'text-[var(--text-secondary)]';
+    if (fileName.endsWith('.json')) return 'text-[var(--warning)]';
+    return 'text-[var(--text-secondary)]';
   }
 }

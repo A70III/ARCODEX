@@ -26,7 +26,7 @@ import { SettingsService } from '../../services/settings.service';
     SettingsDialogComponent
   ],
   template: `
-    <div class="flex flex-col h-screen w-screen overflow-hidden bg-[#1e1e1e]">
+    <div class="flex flex-col h-screen w-screen overflow-hidden bg-[var(--bg-primary)]">
       <!-- Header / Menu Bar -->
       <app-header />
       
