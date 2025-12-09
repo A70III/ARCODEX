@@ -10,6 +10,7 @@ import {
   Output,
   EventEmitter,
 } from "@angular/core";
+import { FormsModule } from "@angular/forms";
 import { ProjectStateService } from "../../services/project-state.service";
 import { SettingsService } from "../../services/settings.service";
 import { Editor } from "@tiptap/core";
@@ -17,13 +18,18 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 import { WelcomeComponent } from '../workspace/welcome/welcome.component';
+
+// Search highlight plugin key
+const searchHighlightPluginKey = new PluginKey('searchHighlight');
 
 @Component({
   selector: "app-editor",
   standalone: true,
-  imports: [WelcomeComponent],
+  imports: [WelcomeComponent, FormsModule],
   template: `
     <div class="flex flex-col h-full bg-[var(--bg-primary)]">
       <!-- Tab bar -->
@@ -240,6 +246,58 @@ import { WelcomeComponent } from '../workspace/welcome/welcome.component';
       </div>
       }
 
+      <!-- Search Bar (VS Code style) -->
+      @if (searchVisible() && projectState.activeFile()) {
+      <div class="search-bar">
+        <div class="search-container">
+          <input
+            #searchInput
+            type="text"
+            class="search-input"
+            placeholder="ค้นหา..."
+            [(ngModel)]="searchQuery"
+            (input)="onSearchInput()"
+            (keydown)="onSearchKeydown($event)"
+          />
+          @if (totalMatches() > 0) {
+          <span class="search-count">
+            {{ currentMatchIndex() + 1 }} / {{ totalMatches() }}
+          </span>
+          }
+          @if (searchQuery && totalMatches() === 0) {
+          <span class="search-count no-results">
+            ไม่พบผลลัพธ์
+          </span>
+          }
+        </div>
+        <div class="search-buttons">
+          <button
+            class="search-btn"
+            (click)="goToPrevMatch()"
+            [disabled]="totalMatches() === 0"
+            title="ก่อนหน้า (Shift+Enter)"
+          >
+            <span class="material-icons">keyboard_arrow_up</span>
+          </button>
+          <button
+            class="search-btn"
+            (click)="goToNextMatch()"
+            [disabled]="totalMatches() === 0"
+            title="ถัดไป (Enter)"
+          >
+            <span class="material-icons">keyboard_arrow_down</span>
+          </button>
+          <button
+            class="search-btn close-btn"
+            (click)="closeSearch()"
+            title="ปิด (Escape)"
+          >
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      </div>
+      }
+
       <!-- Editor area -->
       <div class="flex-1 overflow-auto" (keydown)="onKeyDown($event)">
         @if (projectState.activeFile()) {
@@ -419,6 +477,110 @@ import { WelcomeComponent } from '../workspace/welcome/welcome.component';
         height: 0;
         pointer-events: none;
       }
+
+      /* Search Bar Styles */
+      .search-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background-color: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .search-container {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        max-width: 400px;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 0 8px;
+      }
+
+      .search-container:focus-within {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent);
+      }
+
+      .search-input {
+        flex: 1;
+        padding: 6px 0;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--text-primary);
+        font-size: 13px;
+        min-width: 150px;
+      }
+
+      .search-input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .search-count {
+        font-size: 12px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        padding-left: 8px;
+      }
+
+      .search-count.no-results {
+        color: var(--warning);
+      }
+
+      .search-buttons {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+
+      .search-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        color: var(--text-primary);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.15s;
+      }
+
+      .search-btn:hover:not(:disabled) {
+        background-color: var(--bg-hover);
+      }
+
+      .search-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .search-btn .material-icons {
+        font-size: 20px;
+      }
+
+      .search-btn.close-btn:hover {
+        background-color: var(--error);
+        color: white;
+      }
+
+      /* Search highlight styles */
+      :host ::ng-deep .search-highlight {
+        background-color: var(--warning);
+        color: var(--bg-primary);
+        border-radius: 2px;
+      }
+
+      :host ::ng-deep .search-highlight-current {
+        background-color: var(--accent);
+        color: white;
+        border-radius: 2px;
+        box-shadow: 0 0 0 2px var(--accent);
+      }
     `,
   ],
   host: {
@@ -427,6 +589,7 @@ import { WelcomeComponent } from '../workspace/welcome/welcome.component';
 })
 export class EditorComponent implements OnDestroy {
   @ViewChild("editorContainer") editorContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild("searchInput") searchInput?: ElementRef<HTMLInputElement>;
 
   projectState = inject(ProjectStateService);
   settingsService = inject(SettingsService);
@@ -434,6 +597,14 @@ export class EditorComponent implements OnDestroy {
   private currentFilePath = "";
   private isUpdatingFromService = false;
   private editorState = signal({ bold: false, italic: false });
+
+  // Search state
+  readonly searchVisible = signal(false);
+  searchQuery = '';
+  readonly currentMatchIndex = signal(0);
+  readonly totalMatches = signal(0);
+  private searchMatches: Array<{ from: number; to: number }> = [];
+  private searchDebounceTimer: any = null;
 
   // Line numbers - computed from editor content with caching
   private _lineCount = signal(1);
@@ -808,9 +979,196 @@ export class EditorComponent implements OnDestroy {
   onKeyDown(event: KeyboardEvent): void {
     const isCtrlOrCmd = event.ctrlKey || event.metaKey;
 
+    // Ctrl+F to open search
+    if (isCtrlOrCmd && event.key.toLowerCase() === 'f') {
+      event.preventDefault();
+      if (this.projectState.activeFile()) {
+        this.openSearch();
+      }
+      return;
+    }
+
+    // Escape to close search
+    if (event.key === 'Escape' && this.searchVisible()) {
+      event.preventDefault();
+      this.closeSearch();
+      return;
+    }
+
     if (isCtrlOrCmd && event.key === "s") {
       event.preventDefault();
       this.projectState.saveActiveFile();
+    }
+  }
+
+  // --- Search Methods ---
+
+  openSearch(): void {
+    this.searchVisible.set(true);
+    // Focus search input after view updates
+    setTimeout(() => {
+      this.searchInput?.nativeElement?.focus();
+      this.searchInput?.nativeElement?.select();
+    }, 0);
+  }
+
+  closeSearch(): void {
+    this.searchVisible.set(false);
+    this.searchQuery = '';
+    this.searchMatches = [];
+    this.currentMatchIndex.set(0);
+    this.totalMatches.set(0);
+    this.clearHighlights();
+    // Refocus editor
+    this.editor?.commands.focus();
+  }
+
+  onSearchInput(): void {
+    // Debounce search to avoid performance issues while typing
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+    this.searchDebounceTimer = setTimeout(() => {
+      this.performSearch();
+    }, 150);
+  }
+
+  onSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (event.shiftKey) {
+        this.goToPrevMatch();
+      } else {
+        this.goToNextMatch();
+      }
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closeSearch();
+    }
+  }
+
+  private performSearch(): void {
+    if (!this.editor || !this.searchQuery.trim()) {
+      this.searchMatches = [];
+      this.currentMatchIndex.set(0);
+      this.totalMatches.set(0);
+      this.clearHighlights();
+      return;
+    }
+
+    const query = this.searchQuery.toLowerCase();
+    const doc = this.editor.state.doc;
+    const matches: Array<{ from: number; to: number }> = [];
+
+    // Find all matches in the document
+    doc.descendants((node, pos) => {
+      if (node.isText && node.text) {
+        const text = node.text.toLowerCase();
+        let index = 0;
+        while ((index = text.indexOf(query, index)) !== -1) {
+          matches.push({
+            from: pos + index,
+            to: pos + index + this.searchQuery.length
+          });
+          index += 1; // Move past this match to find overlapping matches
+        }
+      }
+      return true;
+    });
+
+    this.searchMatches = matches;
+    this.totalMatches.set(matches.length);
+    
+    // Reset to first match or keep current if valid
+    if (matches.length > 0) {
+      const currentIdx = this.currentMatchIndex();
+      if (currentIdx >= matches.length) {
+        this.currentMatchIndex.set(0);
+      }
+      this.updateHighlights();
+      this.scrollToCurrentMatch();
+    } else {
+      this.currentMatchIndex.set(0);
+      this.clearHighlights();
+    }
+  }
+
+  goToNextMatch(): void {
+    if (this.searchMatches.length === 0) return;
+    
+    const nextIndex = (this.currentMatchIndex() + 1) % this.searchMatches.length;
+    this.currentMatchIndex.set(nextIndex);
+    this.updateHighlights();
+    this.scrollToCurrentMatch();
+  }
+
+  goToPrevMatch(): void {
+    if (this.searchMatches.length === 0) return;
+    
+    const prevIndex = this.currentMatchIndex() - 1;
+    this.currentMatchIndex.set(prevIndex < 0 ? this.searchMatches.length - 1 : prevIndex);
+    this.updateHighlights();
+    this.scrollToCurrentMatch();
+  }
+
+  private scrollToCurrentMatch(): void {
+    if (!this.editor || this.searchMatches.length === 0) return;
+    
+    const match = this.searchMatches[this.currentMatchIndex()];
+    if (match) {
+      this.editor.commands.setTextSelection(match);
+      this.editor.commands.scrollIntoView();
+    }
+  }
+
+  private updateHighlights(): void {
+    if (!this.editor) return;
+
+    const currentIdx = this.currentMatchIndex();
+    const decorations = this.searchMatches.map((match, idx) => {
+      const className = idx === currentIdx ? 'search-highlight-current' : 'search-highlight';
+      return Decoration.inline(match.from, match.to, { class: className });
+    });
+
+    // Register or update the decoration plugin
+    const plugin = new Plugin({
+      key: searchHighlightPluginKey,
+      props: {
+        decorations: () => DecorationSet.create(this.editor!.state.doc, decorations)
+      }
+    });
+
+    // Remove old plugin and add new one
+    const existingPlugin = this.editor.state.plugins.find(
+      p => (p as any).key === searchHighlightPluginKey
+    );
+    
+    if (existingPlugin) {
+      // Replace plugin by creating new state
+      const newPlugins = this.editor.state.plugins.filter(
+        p => (p as any).key !== searchHighlightPluginKey
+      );
+      newPlugins.push(plugin);
+      const newState = this.editor.state.reconfigure({ plugins: newPlugins });
+      this.editor.view.updateState(newState);
+    } else {
+      // Add new plugin
+      const tr = this.editor.state.tr.setMeta('addPlugin', plugin);
+      // Manually register plugin
+      this.editor.registerPlugin(plugin);
+    }
+  }
+
+  private clearHighlights(): void {
+    if (!this.editor) return;
+    
+    // Remove the search highlight plugin
+    const existingPlugin = this.editor.state.plugins.find(
+      p => (p as any).key === searchHighlightPluginKey
+    );
+    
+    if (existingPlugin) {
+      this.editor.unregisterPlugin(searchHighlightPluginKey);
     }
   }
 
