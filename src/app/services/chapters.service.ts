@@ -2,12 +2,19 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { invoke } from '@tauri-apps/api/core';
 import { ProjectStateService } from './project-state.service';
 
+// Simplified chapter order item - only essential fields for cOrder.taleside
+export interface ChapterOrderItem {
+  name: string;
+  order: number;
+  groupId: string | null;
+}
+
+// Full chapter item used internally (includes path)
 export interface ChapterItem {
   name: string;
   path: string;
   order: number;
   groupId: string | null;
-  createdAt?: number;
 }
 
 export interface ChapterGroup {
@@ -20,7 +27,7 @@ export interface ChapterGroup {
 // cOrder.taleside file structure
 interface ChapterOrderConfig {
   version: string;
-  chaptersOrder: ChapterItem[];
+  chaptersOrder: ChapterOrderItem[];
   chapterGroups: ChapterGroup[];
 }
 
@@ -135,7 +142,7 @@ export class ChaptersService {
       }
 
       // Read cOrder.taleside for ordering/grouping info
-      let savedOrder: ChapterItem[] = [];
+      let savedOrder: ChapterOrderItem[] = [];
       let savedGroups: ChapterGroup[] = [];
       
       try {
@@ -154,22 +161,32 @@ export class ChaptersService {
         const mdFiles = (tree.children || [])
           .filter(child => !child.is_dir && child.name.endsWith('.md'))
           .map(child => {
-            // Find saved order info
-            const saved = savedOrder.find(s => s.path === child.path);
+            const baseName = child.name.replace(/\.md$/, '');
+            // Find saved order info by name
+            const saved = savedOrder.find(s => s.name === baseName);
             return {
-              name: child.name.replace(/\.md$/, ''),
+              name: baseName,
               path: child.path,
-              order: saved?.order ?? Date.now(),
+              order: saved?.order ?? 999, // Default high order for new chapters
               groupId: saved?.groupId ?? null,
-              createdAt: saved?.createdAt
             };
           });
 
         // Sort by order
         mdFiles.sort((a, b) => a.order - b.order);
 
+        // Reassign sequential order numbers starting from 1
+        mdFiles.forEach((file, index) => {
+          file.order = index + 1;
+        });
+
         this._chapters.set(mdFiles);
         this._groups.set(savedGroups);
+        
+        // Save to normalize order if needed
+        if (mdFiles.length > 0) {
+          await this.saveOrderConfig();
+        }
         
       } catch (e) {
         // Chapters folder might not exist
@@ -198,10 +215,17 @@ export class ChaptersService {
         // Folder might already exist
       }
 
+      // Convert to simplified format (only name, order, groupId)
+      const chaptersOrder: ChapterOrderItem[] = this._chapters().map(c => ({
+        name: c.name,
+        order: c.order,
+        groupId: c.groupId
+      }));
+
       // Create cOrder.taleside content
       const orderConfig: ChapterOrderConfig = {
         version: '1.0',
-        chaptersOrder: this._chapters(),
+        chaptersOrder,
         chapterGroups: this._groups()
       };
 
@@ -232,26 +256,24 @@ export class ChaptersService {
       }
 
       const filePath = `${chaptersPath}/${fileName}`;
+      const baseName = fileName.replace(/\.md$/, '');
       
       // Create empty file
       await invoke('save_file_content', { path: filePath, content: '' });
 
-      // Get current lowest order (to place new chapter at top)
+      // Shift all existing orders up by 1 and add new chapter at order 1
       const chapters = this._chapters();
-      const minOrder = chapters.length > 0 
-        ? Math.min(...chapters.map(c => c.order)) - 1 
-        : 0;
+      const updatedChapters = chapters.map(c => ({ ...c, order: c.order + 1 }));
 
-      // Add to list
+      // Add new chapter at top (order 1)
       const newChapter: ChapterItem = {
-        name: fileName.replace(/\.md$/, ''),
+        name: baseName,
         path: filePath,
-        order: minOrder,
+        order: 1,
         groupId: null,
-        createdAt: Date.now()
       };
 
-      this._chapters.update(list => [newChapter, ...list]);
+      this._chapters.set([newChapter, ...updatedChapters]);
       await this.saveOrderConfig();
       
       // Refresh file tree
@@ -275,13 +297,14 @@ export class ChaptersService {
       // Get directory from path
       const dir = path.substring(0, path.lastIndexOf('/'));
       const newPath = `${dir}/${fileName}`;
+      const baseName = fileName.replace(/\.md$/, '');
 
       await invoke('rename_item', { oldPath: path, newPath: newPath });
 
       // Update local state
       this._chapters.update(list => 
         list.map(c => c.path === path 
-          ? { ...c, path: newPath, name: fileName.replace(/\.md$/, '') }
+          ? { ...c, path: newPath, name: baseName }
           : c
         )
       );
@@ -301,8 +324,14 @@ export class ChaptersService {
     try {
       await invoke('delete_file', { path });
 
-      // Remove from local state
-      this._chapters.update(list => list.filter(c => c.path !== path));
+      // Remove from local state and reorder
+      let chapters = this._chapters().filter(c => c.path !== path);
+      
+      // Reassign sequential orders
+      chapters.sort((a, b) => a.order - b.order);
+      chapters.forEach((c, i) => { c.order = i + 1; });
+      
+      this._chapters.set(chapters);
       await this.saveOrderConfig();
       await this.projectState.refreshFileTree();
 
@@ -313,15 +342,43 @@ export class ChaptersService {
     }
   }
 
-  // Reorder chapters (update order values)
-  async reorderChapters(orderedPaths: string[]): Promise<void> {
-    this._chapters.update(list => {
-      return list.map(chapter => {
-        const newOrder = orderedPaths.indexOf(chapter.path);
-        return { ...chapter, order: newOrder >= 0 ? newOrder : chapter.order };
-      }).sort((a, b) => a.order - b.order);
-    });
+  // Move chapter up (decrease order number, swap with previous)
+  async moveChapterUp(path: string): Promise<void> {
+    const chapters = [...this._chapters()];
+    const index = chapters.findIndex(c => c.path === path);
     
+    if (index <= 0) return; // Already at top or not found
+    
+    // Swap with previous
+    const current = chapters[index];
+    const previous = chapters[index - 1];
+    
+    current.order = index; // Previous position (1-indexed)
+    previous.order = index + 1; // Current position (1-indexed)
+    
+    // Sort and update
+    chapters.sort((a, b) => a.order - b.order);
+    this._chapters.set(chapters);
+    await this.saveOrderConfig();
+  }
+
+  // Move chapter down (increase order number, swap with next)
+  async moveChapterDown(path: string): Promise<void> {
+    const chapters = [...this._chapters()];
+    const index = chapters.findIndex(c => c.path === path);
+    
+    if (index < 0 || index >= chapters.length - 1) return; // Already at bottom or not found
+    
+    // Swap with next
+    const current = chapters[index];
+    const next = chapters[index + 1];
+    
+    current.order = index + 2; // Next position (1-indexed)
+    next.order = index + 1; // Current position (1-indexed)
+    
+    // Sort and update
+    chapters.sort((a, b) => a.order - b.order);
+    this._chapters.set(chapters);
     await this.saveOrderConfig();
   }
 
@@ -333,7 +390,7 @@ export class ChaptersService {
     const groups = this._groups();
     const maxGroupOrder = groups.length > 0 
       ? Math.max(...groups.map(g => g.order)) + 1 
-      : 0;
+      : 1;
 
     // Add new group
     const newGroup: ChapterGroup = {
