@@ -331,6 +331,9 @@ export class EditorComponent implements OnDestroy {
   
   // Line numbers - computed from editor content
   private _lineCount = signal(1);
+  private lineCountTimer: any = null;
+  private cachedLineHeight = 0;
+  
   readonly lineNumbers = computed(() => {
     const count = Math.max(this._lineCount(), 20); // minimum 20 lines for visual consistency
     return Array.from({ length: count }, (_, i) => i + 1);
@@ -438,8 +441,17 @@ export class EditorComponent implements OnDestroy {
   }
 
   private updateLineCount(editor: Editor): void {
-    // Count visual lines based on actual rendered height
-    // This accounts for text wrapping
+    // Debounce line count updates to avoid performance issues
+    if (this.lineCountTimer) {
+      clearTimeout(this.lineCountTimer);
+    }
+    
+    this.lineCountTimer = setTimeout(() => {
+      this.calculateLineCount(editor);
+    }, 200); // 200ms debounce
+  }
+
+  private calculateLineCount(editor: Editor): void {
     const editorElement = this.editorContainer?.nativeElement.querySelector('.tiptap');
     if (!editorElement) {
       // Fallback to block count
@@ -447,16 +459,18 @@ export class EditorComponent implements OnDestroy {
       return;
     }
     
-    // Get computed styles for line height calculation
-    const computedStyle = window.getComputedStyle(editorElement);
-    const fontSize = parseFloat(computedStyle.fontSize) || 16;
-    const lineHeight = parseFloat(computedStyle.lineHeight) || (fontSize * 1.9);
+    // Cache line height (only calculate once per session or when font changes)
+    if (!this.cachedLineHeight) {
+      const computedStyle = window.getComputedStyle(editorElement);
+      const fontSize = parseFloat(computedStyle.fontSize) || 16;
+      this.cachedLineHeight = parseFloat(computedStyle.lineHeight) || (fontSize * 1.9);
+    }
     
-    // Get the actual content height
+    // Get the actual content height (fast operation)
     const contentHeight = editorElement.scrollHeight;
     
     // Calculate visual line count
-    const visualLineCount = Math.ceil(contentHeight / lineHeight);
+    const visualLineCount = Math.ceil(contentHeight / this.cachedLineHeight);
     
     this._lineCount.set(Math.max(1, visualLineCount));
   }
