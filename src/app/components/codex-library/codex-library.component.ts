@@ -1,12 +1,13 @@
 import { Component, inject, signal, OnInit, effect } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
 import { CodexService } from "../../services/codex.service";
 import { ProjectStateService } from "../../services/project-state.service";
 
 @Component({
   selector: "app-codex-library",
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="flex flex-col h-full bg-[var(--bg-primary)]">
       <!-- Header -->
@@ -15,7 +16,7 @@ import { ProjectStateService } from "../../services/project-state.service";
       >
         <div class="flex items-center gap-3">
           <span class="material-icons text-3xl text-[var(--accent)]"
-            >auto_stories</span
+            >menu_book</span
           >
           <h1 class="text-xl font-semibold text-[var(--text-primary)]">
             Codex Library
@@ -57,6 +58,7 @@ import { ProjectStateService } from "../../services/project-state.service";
         <button
           class="p-2 ml-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-md transition-colors"
           title="เพิ่มหมวดหมู่ใหม่"
+          (click)="openAddCategoryDialog()"
         >
           <span class="material-icons text-lg">add</span>
         </button>
@@ -88,6 +90,7 @@ import { ProjectStateService } from "../../services/project-state.service";
           </p>
           <button
             class="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-inverse)] rounded-lg transition-colors flex items-center gap-2"
+            (click)="openAddCategoryDialog()"
           >
             <span class="material-icons">add</span>
             สร้างหมวดหมู่ใหม่
@@ -103,12 +106,81 @@ import { ProjectStateService } from "../../services/project-state.service";
         </div>
         }
       </div>
+
+      <!-- Add Category Dialog -->
+      @if (showAddDialog()) {
+      <div
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-[1001]"
+        (click)="cancelAddDialog()"
+      >
+        <div
+          class="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-5 w-96 shadow-xl"
+          (click)="$event.stopPropagation()"
+        >
+          <h3 class="text-base font-medium text-[var(--text-primary)] mb-4">
+            สร้างหมวดหมู่ใหม่
+          </h3>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm text-[var(--text-secondary)] mb-1.5">
+                ชื่อโฟลเดอร์ (ภาษาอังกฤษ)
+              </label>
+              <input
+                type="text"
+                class="w-full bg-[var(--bg-hover)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm px-3 py-2 rounded outline-none focus:border-[var(--accent)]"
+                placeholder="เช่น characters, places, items..."
+                [(ngModel)]="newFolderName"
+                (keydown.enter)="confirmAddCategory()"
+                (keydown.escape)="cancelAddDialog()"
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm text-[var(--text-secondary)] mb-1.5">
+                ชื่อที่แสดง (ภาษาไทย)
+              </label>
+              <input
+                type="text"
+                class="w-full bg-[var(--bg-hover)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm px-3 py-2 rounded outline-none focus:border-[var(--accent)]"
+                placeholder="เช่น ตัวละคร, สถานที่, ไอเทม..."
+                [(ngModel)]="newDisplayName"
+                (keydown.enter)="confirmAddCategory()"
+                (keydown.escape)="cancelAddDialog()"
+              />
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-2 mt-5">
+            <button
+              class="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              (click)="cancelAddDialog()"
+            >
+              ยกเลิก
+            </button>
+            <button
+              class="px-4 py-2 text-sm bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-inverse)] rounded"
+              [disabled]="!newFolderName.trim() || !newDisplayName.trim()"
+              [class.opacity-50]="!newFolderName.trim() || !newDisplayName.trim()"
+              (click)="confirmAddCategory()"
+            >
+              สร้างหมวดหมู่
+            </button>
+          </div>
+        </div>
+      </div>
+      }
     </div>
   `,
 })
 export class CodexLibraryComponent implements OnInit {
   codexService = inject(CodexService);
   projectState = inject(ProjectStateService);
+
+  // Add category dialog state
+  showAddDialog = signal(false);
+  newFolderName = "";
+  newDisplayName = "";
 
   constructor() {
     // Reload codex when view becomes active
@@ -131,5 +203,28 @@ export class CodexLibraryComponent implements OnInit {
     if (tab === "all") return "ทั้งหมด";
     const item = this.codexService.submenuItems().find((i) => i.folder === tab);
     return item?.label || tab;
+  }
+
+  // Dialog methods
+  openAddCategoryDialog(): void {
+    this.newFolderName = "";
+    this.newDisplayName = "";
+    this.showAddDialog.set(true);
+  }
+
+  cancelAddDialog(): void {
+    this.showAddDialog.set(false);
+    this.newFolderName = "";
+    this.newDisplayName = "";
+  }
+
+  async confirmAddCategory(): Promise<void> {
+    const folderName = this.newFolderName.trim();
+    const displayName = this.newDisplayName.trim();
+
+    if (!folderName || !displayName) return;
+
+    await this.codexService.createCategory(folderName, displayName);
+    this.cancelAddDialog();
   }
 }
