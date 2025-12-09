@@ -87,7 +87,7 @@ export class WelcomeComponent {
   }
 
   createNewProject(): void {
-    this.projectState.openProject(); 
+    this.projectState.openNewProjectDialog(); 
   }
 
   openRecent(path: string): void {

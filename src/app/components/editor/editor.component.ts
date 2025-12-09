@@ -27,7 +27,7 @@ import { WelcomeComponent } from '../welcome/welcome.component';
               [class.text-[var(--text-secondary)]]="projectState.activeFilePath() !== file.path"
               (click)="onTabClick(file.path)"
             >
-              <span class="material-icons text-sm text-[var(--info)]">description</span>
+              <span class="material-icons text-sm" [class]="getFileIconClass(file.name)">{{ getFileIcon(file.name) }}</span>
               <span class="text-[var(--text-primary)]">{{ file.name }}</span>
               @if (file.isDirty) {
                 <span class="w-2 h-2 rounded-full bg-white ml-1"></span>
@@ -570,5 +570,23 @@ export class EditorComponent implements OnDestroy {
       event.preventDefault();
       this.projectState.saveActiveFile();
     }
+  }
+
+  // --- Icons ---
+
+  getFileIcon(fileName: string): string {
+    if (fileName.endsWith('.taleside')) return 'auto_stories';
+    if (fileName.endsWith('.md')) return 'description';
+    if (fileName.endsWith('.txt')) return 'article';
+    if (fileName.endsWith('.json')) return 'data_object';
+    return 'insert_drive_file';
+  }
+
+  getFileIconClass(fileName: string): string {
+    if (fileName.endsWith('.taleside')) return 'text-[var(--accent)]';
+    if (fileName.endsWith('.md')) return 'text-[var(--info)]';
+    if (fileName.endsWith('.txt')) return 'text-[var(--text-secondary)]';
+    if (fileName.endsWith('.json')) return 'text-[var(--warning)]';
+    return 'text-[var(--text-secondary)]';
   }
 }
