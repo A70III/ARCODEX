@@ -1,11 +1,9 @@
 import { Component, inject } from '@angular/core';
 import { ProjectStateService } from '../../services/project-state.service';
+import { RecentProjectsService, RecentProjectDisplay } from '../../services/recent-projects.service';
 import { CommonModule } from '@angular/common';
 
-interface RecentProject {
-  name: string;
-  path: string;
-}
+
 
 @Component({
   selector: 'app-welcome',
@@ -56,13 +54,19 @@ interface RecentProject {
               <div class="space-y-2">
                 @for (project of recentProjects; track project.path) {
                   <button 
-                    class="flex items-center gap-2 w-full text-left text-sm hover:text-[var(--accent)] hover:bg-[var(--bg-hover)] p-1.5 -ml-1.5 rounded transition-colors group"
+                    class="flex items-center gap-2 w-full text-left text-sm hover:text-[var(--accent)] hover:bg-[var(--bg-hover)] p-2 -ml-2 rounded transition-colors group"
                     (click)="openRecent(project.path)"
                   >
-                    <span class="material-icons text-base text-[var(--text-muted)] group-hover:text-[var(--accent)]">history</span>
+                    <span class="material-icons text-2xl text-[var(--text-muted)] group-hover:text-[var(--accent)]">book</span>
                     <div class="flex-1 min-w-0">
-                      <div class="truncate">{{ project.name }}</div>
-                      <div class="text-xs text-[var(--text-muted)] truncate">{{ project.path }}</div>
+                      <div class="font-medium truncate">{{ project.name }}</div>
+                      <div class="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                        @if (project.author) {
+                          <span class="truncate max-w-[100px]">{{ project.author }}</span>
+                          <span class="w-1 h-1 rounded-full bg-[var(--text-muted)]"></span>
+                        }
+                        <span class="truncate opacity-70">{{ project.path }}</span>
+                      </div>
                     </div>
                   </button>
                 }
@@ -78,9 +82,16 @@ interface RecentProject {
 })
 export class WelcomeComponent {
   projectState = inject(ProjectStateService);
-  recentProjects: RecentProject[] = [
-    // TODO: Implement actual recent projects persistence
-  ];
+  recentProjectsService = inject(RecentProjectsService);
+  recentProjects: RecentProjectDisplay[] = [];
+
+  constructor() {
+    this.loadRecentProjects();
+  }
+
+  async loadRecentProjects() {
+    this.recentProjects = await this.recentProjectsService.getRecentProjectsWithMetadata();
+  }
 
   openProject(): void {
     this.projectState.openProject();
@@ -91,6 +102,6 @@ export class WelcomeComponent {
   }
 
   openRecent(path: string): void {
-    console.log('Open recent:', path);
+    this.projectState.openProjectByPath(path);
   }
 }

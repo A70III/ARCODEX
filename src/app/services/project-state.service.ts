@@ -1,6 +1,7 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { invoke } from '@tauri-apps/api/core';
 import { FileNode, OpenedFile } from '../models/file-node.model';
+import { RecentProjectsService } from './recent-projects.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,6 +15,8 @@ export class ProjectStateService {
   
   // Temporary storage for folder path during new project creation
   private _newProjectBasePath = '';
+
+  recentProjectsService = inject(RecentProjectsService);
 
   // State signals
   private _currentFolderPath = signal<string>('');
@@ -49,10 +52,26 @@ export class ProjectStateService {
       const path = await invoke<string | null>('open_project_dialog');
       if (path) {
         this._currentFolderPath.set(path);
+        this.recentProjectsService.add(path);
         await this.refreshFileTree();
       }
     } catch (error) {
       console.error('Failed to open project:', error);
+    }
+  }
+
+  /**
+   * Open project by path (for recent projects)
+   */
+  async openProjectByPath(path: string): Promise<void> {
+    try {
+      this._currentFolderPath.set(path);
+      this.recentProjectsService.add(path);
+      await this.refreshFileTree();
+    } catch (error) {
+      console.error('Failed to open project:', error);
+      // If failed (e.g. folder deleted), maybe remove from recent?
+      // For now, let's just log it. The user can manually remove it if we add that UI later.
     }
   }
 
@@ -108,6 +127,7 @@ export class ProjectStateService {
       
       // Set the new project as current and refresh tree
       this._currentFolderPath.set(projectPath);
+      this.recentProjectsService.add(projectPath);
       await this.refreshFileTree();
     } catch (error: any) {
       throw new Error(error || 'Failed to create project');
