@@ -63,39 +63,39 @@ export class RecentProjectsService {
 
   async getRecentProjectsWithMetadata(): Promise<RecentProjectDisplay[]> {
     const paths = this._recentPaths();
-    const results: RecentProjectDisplay[] = [];
-
-    for (const path of paths) {
-      try {
-        const configPath = `${path}/config.arc`;
-        // We use the existing read_file_content command
-        // Note: We need to handle the case where the file doesn't exist (legacy projects or deleted config)
-        let config: ProjectConfig | null = null;
-        
+    // Load all projects in parallel using Promise.all
+    const promises = paths.map(async (path) => {
         try {
-            const content = await invoke<string>('read_file_content', { path: configPath });
-            config = JSON.parse(content);
+            const configPath = `${path}/config.arc`;
+            // We use the existing read_file_content command
+            // Note: We need to handle the case where the file doesn't exist (legacy projects or deleted config)
+            let config: ProjectConfig | null = null;
+            
+            try {
+                const content = await invoke<string>('read_file_content', { path: configPath });
+                config = JSON.parse(content);
+            } catch (e) {
+                // Config file might not exist or be unreadable, use fallback
+            }
+    
+            const folderName = path.split(/[/\\]/).pop() || path;
+    
+            return {
+                path,
+                name: config?.title || folderName,
+                author: config?.author,
+            } as RecentProjectDisplay;
         } catch (e) {
-            // Config file might not exist or be unreadable, use fallback
+            console.error(`Failed to load metadata for ${path}:`, e);
+            // Still add it to the list, just with basic info
+            return {
+                path,
+                name: path.split(/[/\\]/).pop() || path
+            } as RecentProjectDisplay;
         }
+    });
 
-        const folderName = path.split(/[/\\]/).pop() || path;
-
-        results.push({
-          path,
-          name: config?.title || folderName,
-          author: config?.author,
-        });
-      } catch (e) {
-        console.error(`Failed to load metadata for ${path}:`, e);
-        // Still add it to the list, just with basic info
-        results.push({
-          path,
-          name: path.split(/[/\\]/).pop() || path
-        });
-      }
-    }
-
+    const results = await Promise.all(promises);
     return results;
   }
 }

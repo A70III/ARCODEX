@@ -1,4 +1,4 @@
-import { Component, Input, inject, signal, forwardRef, HostListener, ElementRef, ViewChild } from '@angular/core';
+import { Component, Input, inject, signal, forwardRef, HostListener, ElementRef, ViewChild, computed } from '@angular/core';
 import { CommonModule } from '@angular/common'; 
 import { FormsModule } from '@angular/forms';
 import { FileNode } from '../../../models/file-node.model';
@@ -164,7 +164,24 @@ interface ContextMenuState {
   `
 })
 export class FileTreeComponent {
-  @Input() node!: FileNode;
+  // Input with signal for reactivity
+  _node = signal<FileNode | null>(null);
+  
+  @Input() set node(value: FileNode) {
+    this._node.set(value);
+  }
+  
+  // Computed sorted children to prevent re-sorting on every render
+  sortedChildren = computed(() => {
+    const node = this._node();
+    if (!node || !node.children) return [];
+    
+    return [...node.children].sort((a, b) => {
+      if (a.is_dir && !b.is_dir) return -1;
+      if (!a.is_dir && b.is_dir) return 1;
+      return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    });
+  });
   @Input() depth = 0;
 
   projectState = inject(ProjectStateService);
@@ -197,15 +214,7 @@ export class FileTreeComponent {
     this.closeContextMenu();
   }
 
-  sortedChildren() {
-    if (!this.node.children) return [];
-    
-    return [...this.node.children].sort((a, b) => {
-      if (a.is_dir && !b.is_dir) return -1;
-      if (!a.is_dir && b.is_dir) return 1;
-      return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-    });
-  }
+  // sortedChildren computed is defined above
 
   isExpanded(path: string): boolean {
     return this.expandedFolders().has(path);

@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, Pipe, PipeTransform, forwardRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { SearchService, SearchMatch } from '../../../services/search.service';
@@ -7,7 +7,7 @@ import { ProjectStateService } from '../../../services/project-state.service';
 @Component({
   selector: 'app-search-panel',
   standalone: true,
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, forwardRef(() => HighlightMatchPipe)],
   template: `
     <div class="flex flex-col h-full bg-[var(--bg-secondary)]">
       <!-- Header -->
@@ -91,7 +91,7 @@ import { ProjectStateService } from '../../../services/project-state.service';
                         <span class="text-xs text-[var(--text-muted)]">: {{ result.line_number }}</span>
                       </div>
                       <!-- Match content -->
-                      <div class="text-xs text-[var(--text-secondary)] truncate mt-0.5 pl-5" [innerHTML]="highlightMatch(result)">
+                      <div class="text-xs text-[var(--text-secondary)] truncate mt-0.5 pl-5" [innerHTML]="result | highlightMatch">
                       </div>
                     </div>
                   }
@@ -192,23 +192,7 @@ export class SearchPanelComponent {
     this.projectState.navigateToMatch(result.file_path, result);
   }
   
-  highlightMatch(result: SearchMatch): string {
-    const line = result.line_content;
-    const start = result.match_start;
-    const end = result.match_end;
-    
-    // Escape HTML
-    const escape = (str: string) => str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    
-    const before = escape(line.substring(0, start));
-    const match = escape(line.substring(start, end));
-    const after = escape(line.substring(end));
-    
-    return `${before}<span class="text-[var(--accent)] font-medium">${match}</span>${after}`;
-  }
+  // highlightMatch moved to Pipe
   
   getFileIcon(fileName: string): string {
     if (fileName.endsWith('.arc')) return 'auto_stories';
@@ -224,5 +208,29 @@ export class SearchPanelComponent {
     if (fileName.endsWith('.txt')) return 'text-[var(--text-secondary)]';
     if (fileName.endsWith('.json')) return 'text-[var(--warning)]';
     return 'text-[var(--text-secondary)]';
+  }
+}
+
+@Pipe({
+  name: 'highlightMatch',
+  standalone: true
+})
+export class HighlightMatchPipe implements PipeTransform {
+  transform(result: SearchMatch): string {
+    const line = result.line_content;
+    const start = result.match_start;
+    const end = result.match_end;
+    
+    // Escape HTML
+    const escape = (str: string) => str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    
+    const before = escape(line.substring(0, start));
+    const match = escape(line.substring(start, end));
+    const after = escape(line.substring(end));
+    
+    return `${before}<span class="text-[var(--accent)] font-medium">${match}</span>${after}`;
   }
 }
