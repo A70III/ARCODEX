@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { ProjectStateService } from '../../services/project-state.service';
+import { ProjectStateService } from '../../../services/project-state.service';
 import { CommonModule } from '@angular/common';
 
 @Component({

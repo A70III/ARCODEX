@@ -1,10 +1,10 @@
 import { Component, inject, signal, effect } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { ProjectStateService } from "../../services/project-state.service";
-import { ChaptersService } from "../../services/chapters.service";
-import { FileTreeComponent } from "../file-tree/file-tree.component";
-import { SearchPanelComponent } from "../search-panel/search-panel.component";
-import { ChaptersComponent } from "../chapters/chapters.component";
+import { ProjectStateService } from "../../../services/project-state.service";
+import { ChaptersService } from "../../../services/chapters.service";
+import { FileTreeComponent } from '../file-tree/file-tree.component';
+import { SearchPanelComponent } from '../search-panel/search-panel.component';
+import { ChaptersComponent } from '../chapters/chapters.component';
 
 
 @Component({

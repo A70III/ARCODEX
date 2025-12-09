@@ -5,8 +5,8 @@ import {
   ChaptersService,
   ChapterItem,
   ChapterGroup,
-} from "../../services/chapters.service";
-import { ProjectStateService } from "../../services/project-state.service";
+} from "../../../services/chapters.service";
+import { ProjectStateService } from "../../../services/project-state.service";
 
 @Component({
   selector: "app-chapters",

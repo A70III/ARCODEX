@@ -1,8 +1,8 @@
 import { Component, Input, inject, signal, forwardRef, HostListener, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common'; 
 import { FormsModule } from '@angular/forms';
-import { FileNode } from '../../models/file-node.model';
-import { ProjectStateService } from '../../services/project-state.service';
+import { FileNode } from '../../../models/file-node.model';
+import { ProjectStateService } from '../../../services/project-state.service';
 
 interface ContextMenuState {
   visible: boolean;

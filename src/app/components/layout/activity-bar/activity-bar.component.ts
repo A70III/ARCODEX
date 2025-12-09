@@ -1,6 +1,6 @@
 import { Component, inject, signal } from "@angular/core";
-import { SettingsService } from "../../services/settings.service";
-import { ProjectStateService } from "../../services/project-state.service";
+import { SettingsService } from "../../../services/settings.service";
+import { ProjectStateService } from "../../../services/project-state.service";
 
 interface ActivityItem {
   icon: string;

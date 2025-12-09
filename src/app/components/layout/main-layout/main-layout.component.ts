@@ -2,16 +2,16 @@ import { Component, HostListener, inject, signal, OnInit, OnDestroy } from '@ang
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../header/header.component';
 import { ActivityBarComponent } from '../activity-bar/activity-bar.component';
-import { SidebarComponent } from '../sidebar/sidebar.component';
-import { EditorComponent } from '../editor/editor.component';
+import { SidebarComponent } from '../../sidebar/sidebar/sidebar.component';
+import { EditorComponent } from '../../editor/editor.component';
 import { StatusBarComponent } from '../status-bar/status-bar.component';
-import { InfoPanelComponent } from '../info-panel/info-panel.component';
-import { ConfirmationModalComponent } from '../ui/confirmation-modal.component';
-import { SettingsDialogComponent } from '../ui/settings-dialog.component';
-import { NewProjectDialogComponent } from '../ui/new-project-dialog.component';
-import { CodexLibraryComponent } from '../codex-library/codex-library.component';
-import { ProjectStateService } from '../../services/project-state.service';
-import { SettingsService } from '../../services/settings.service';
+import { InfoPanelComponent } from '../../info-panel/info-panel/info-panel.component';
+import { ConfirmationModalComponent } from '../../shared/confirmation-modal.component';
+import { SettingsDialogComponent } from '../../shared/settings-dialog.component';
+import { NewProjectDialogComponent } from '../../shared/new-project-dialog.component';
+import { CodexLibraryComponent } from '../../workspace/codex-library/codex-library.component';
+import { ProjectStateService } from '../../../services/project-state.service';
+import { SettingsService } from '../../../services/settings.service';
 
 @Component({
   selector: 'app-main-layout',

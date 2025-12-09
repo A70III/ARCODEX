@@ -1,8 +1,8 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { SearchService, SearchMatch } from '../../services/search.service';
-import { ProjectStateService } from '../../services/project-state.service';
+import { SearchService, SearchMatch } from '../../../services/search.service';
+import { ProjectStateService } from '../../../services/project-state.service';
 
 @Component({
   selector: 'app-search-panel',

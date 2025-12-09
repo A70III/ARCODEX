@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
-import { ProjectStateService } from '../../services/project-state.service';
-import { RecentProjectsService, RecentProjectDisplay } from '../../services/recent-projects.service';
+import { ProjectStateService } from '../../../services/project-state.service';
+import { RecentProjectsService, RecentProjectDisplay } from '../../../services/recent-projects.service';
 import { CommonModule } from '@angular/common';
 
 

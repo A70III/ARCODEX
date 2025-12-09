@@ -1,8 +1,8 @@
 import { Component, inject, signal, OnInit, effect } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
-import { CodexService } from "../../services/codex.service";
-import { ProjectStateService } from "../../services/project-state.service";
+import { CodexService } from "../../../services/codex.service";
+import { ProjectStateService } from "../../../services/project-state.service";
 
 @Component({
   selector: "app-codex-library",

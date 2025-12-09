@@ -1,6 +1,6 @@
 import { Component, inject, signal, HostListener, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { ProjectStateService } from "../../services/project-state.service";
+import { ProjectStateService } from "../../../services/project-state.service";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 @Component({

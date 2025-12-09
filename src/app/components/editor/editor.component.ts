@@ -18,7 +18,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 
-import { WelcomeComponent } from "../welcome/welcome.component";
+import { WelcomeComponent } from '../workspace/welcome/welcome.component';
 
 @Component({
   selector: "app-editor",
