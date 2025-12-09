@@ -48,6 +48,18 @@ export class ProjectStateService {
     return parts[parts.length - 1] || '';
   });
 
+  // Project Config
+  private _projectConfig = signal<any>(null);
+  readonly projectConfig = this._projectConfig.asReadonly();
+
+  readonly projectTitle = computed(() => {
+    const config = this._projectConfig();
+    if (config && config.title) {
+        return config.title;
+    }
+    return this.projectName();
+  });
+
   /**
    * Open project folder dialog
    */
@@ -57,6 +69,7 @@ export class ProjectStateService {
       if (path) {
         this._currentFolderPath.set(path);
         this.recentProjectsService.add(path);
+        await this.loadProjectConfig(path);
         await this.refreshFileTree();
       }
     } catch (error) {
@@ -71,6 +84,7 @@ export class ProjectStateService {
     try {
       this._currentFolderPath.set(path);
       this.recentProjectsService.add(path);
+      await this.loadProjectConfig(path);
       await this.refreshFileTree();
     } catch (error) {
       console.error('Failed to open project:', error);
@@ -85,6 +99,7 @@ export class ProjectStateService {
   closeProject(): void {
     this._currentFolderPath.set('');
     this._fileTree.set(null);
+    this._projectConfig.set(null);
     this._openedFiles.set([]);
     this._activeFilePath.set('');
     // Reset sidebar view to explorer (welcome page shown when no project)
@@ -134,6 +149,7 @@ export class ProjectStateService {
       // Set the new project as current and refresh tree
       this._currentFolderPath.set(projectPath);
       this.recentProjectsService.add(projectPath);
+      await this.loadProjectConfig(projectPath);
       await this.refreshFileTree();
     } catch (error: any) {
       throw new Error(error || 'Failed to create project');
@@ -154,6 +170,22 @@ export class ProjectStateService {
       this._fileTree.set(tree);
     } catch (error) {
       console.error('Failed to read project directory:', error);
+    }
+  }
+
+  /**
+   * Load project configuration from config.arc
+   */
+  async loadProjectConfig(projectPath: string): Promise<void> {
+    try {
+      // config.arc is expected to be in the root of the project
+      const configPath = `${projectPath}/config.arc`;
+      const content = await invoke<string>('read_file_content', { path: configPath });
+      const config = JSON.parse(content);
+      this._projectConfig.set(config);
+    } catch (error) {
+      console.warn('Failed to load project config (config.arc not found or invalid):', error);
+      this._projectConfig.set(null);
     }
   }
 

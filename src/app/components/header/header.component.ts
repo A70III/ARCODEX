@@ -15,13 +15,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
       <!-- Left: Logo & Menus -->
       <div class="flex items-center h-full pl-2">
         <div class="flex items-center gap-2 mr-3 pointer-events-none">
-          <span class="material-icons text-[var(--accent)] text-lg"
-            >auto_stories</span
-          >
-          <span
-            class="text-xs font-semibold text-[var(--text-primary)] tracking-wide pt-0.5"
-            >Arc</span
-          >
+          <img src="assets/logo.png" alt="Logo" class="w-[20px] h-[20px] rounded-md" />
         </div>
 
         <!-- Menus (Non-draggable area) -->
@@ -128,6 +122,13 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
             }
           </div>
         </div>
+      </div>
+
+      <!-- Center: Title -->
+      <div class="absolute left-1/2 transform -translate-x-1/2 text-xs text-[var(--text-secondary)] pointer-events-none select-none">
+        @if (projectState.projectName()) {
+          <span>{{ projectState.projectTitle() }} - Arc</span>
+        }
       </div>
 
       <!-- Right: Toggles & Window Controls -->

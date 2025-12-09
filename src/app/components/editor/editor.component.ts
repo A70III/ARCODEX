@@ -766,7 +766,7 @@ export class EditorComponent implements OnDestroy {
   // --- Icons ---
 
   getFileIcon(fileName: string): string {
-    if (fileName.endsWith(".arc")) return "auto_stories";
+    if (fileName.endsWith(".arc")) return "history_edu";
     if (fileName.endsWith(".md")) return "description";
     if (fileName.endsWith(".txt")) return "article";
     if (fileName.endsWith(".json")) return "data_object";
