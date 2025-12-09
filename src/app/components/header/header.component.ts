@@ -30,6 +30,10 @@ interface MenuItem {
             <button class="px-2.5 h-[22px] rounded-sm text-[11px] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors" (click)="toggleMenu('file', $event)">File</button>
             @if (activeMenu() === 'file') {
               <div class="absolute top-full left-0 mt-1 w-56 bg-[var(--bg-secondary)] border border-[var(--border-light)] shadow-[0_4px_10px_rgba(0,0,0,0.5)] rounded-sm py-1 z-50">
+                <button class="menu-item" (click)="newProject()">
+                  <span>New Project...</span>
+                </button>
+                <div class="menu-divider"></div>
                 <button class="menu-item" (click)="triggerNewFile()">
                   <span>New File</span><span class="shortcut">Ctrl+N</span>
                 </button>
@@ -237,6 +241,11 @@ export class HeaderComponent implements OnInit {
   toggleFocusMode(): void {
     this.activeMenu.set(null);
     this.projectState.toggleFocusMode();
+  }
+
+  newProject(): void {
+    this.activeMenu.set(null);
+    this.projectState.openNewProjectDialog();
   }
 
   triggerNewFile(): void {

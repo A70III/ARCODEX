@@ -8,6 +8,7 @@ import { StatusBarComponent } from '../status-bar/status-bar.component';
 import { InfoPanelComponent } from '../info-panel/info-panel.component';
 import { ConfirmationModalComponent } from '../ui/confirmation-modal.component';
 import { SettingsDialogComponent } from '../ui/settings-dialog.component';
+import { NewProjectDialogComponent } from '../ui/new-project-dialog.component';
 import { ProjectStateService } from '../../services/project-state.service';
 import { SettingsService } from '../../services/settings.service';
 
@@ -23,7 +24,8 @@ import { SettingsService } from '../../services/settings.service';
     StatusBarComponent,
     InfoPanelComponent,
     ConfirmationModalComponent,
-    SettingsDialogComponent
+    SettingsDialogComponent,
+    NewProjectDialogComponent
   ],
   template: `
     <div class="flex flex-col h-screen w-screen overflow-hidden bg-[var(--bg-primary)]">
@@ -65,6 +67,11 @@ import { SettingsService } from '../../services/settings.service';
         <!-- Settings Dialog -->
         @if (settingsService.dialogOpen()) {
           <app-settings-dialog />
+        }
+        
+        <!-- New Project Dialog -->
+        @if (projectState.newProjectDialogOpen()) {
+          <app-new-project-dialog />
         }
         
         <!-- Focus Mode Overlay - ESC to exit -->

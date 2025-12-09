@@ -10,6 +10,10 @@ export class ProjectStateService {
   readonly sidebarVisible = signal<boolean>(true);
   readonly infoPanelVisible = signal<boolean>(true);
   readonly focusMode = signal<boolean>(false);
+  readonly newProjectDialogOpen = signal<boolean>(false);
+  
+  // Temporary storage for folder path during new project creation
+  private _newProjectBasePath = '';
 
   // State signals
   private _currentFolderPath = signal<string>('');
@@ -60,6 +64,54 @@ export class ProjectStateService {
     this._fileTree.set(null);
     this._openedFiles.set([]);
     this._activeFilePath.set('');
+  }
+
+  /**
+   * Open new project dialog - first asks for folder location
+   */
+  async openNewProjectDialog(): Promise<void> {
+    try {
+      const path = await invoke<string | null>('open_project_dialog');
+      if (path) {
+        this._newProjectBasePath = path;
+        this.newProjectDialogOpen.set(true);
+      }
+    } catch (error) {
+      console.error('Failed to open folder dialog:', error);
+    }
+  }
+
+  /**
+   * Close new project dialog
+   */
+  closeNewProjectDialog(): void {
+    this.newProjectDialogOpen.set(false);
+    this._newProjectBasePath = '';
+  }
+
+  /**
+   * Create a new project with boilerplate structure
+   */
+  async createNewProject(config: { title: string; author: string; genre: string; description: string }): Promise<void> {
+    if (!this._newProjectBasePath) {
+      throw new Error('No base path selected');
+    }
+
+    try {
+      const projectPath = await invoke<string>('create_new_project', {
+        basePath: this._newProjectBasePath,
+        config
+      });
+      
+      // Close dialog and open the new project
+      this.closeNewProjectDialog();
+      
+      // Set the new project as current and refresh tree
+      this._currentFolderPath.set(projectPath);
+      await this.refreshFileTree();
+    } catch (error: any) {
+      throw new Error(error || 'Failed to create project');
+    }
   }
 
   /**

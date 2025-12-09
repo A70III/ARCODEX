@@ -160,7 +160,70 @@ fn create_folder(path: String) -> Result<(), String> {
     fs::create_dir_all(&path).map_err(|e| format!("Failed to create folder: {}", e))
 }
 
-/// Command 7: Rename item
+/// Project configuration for new projects
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectConfig {
+    pub title: String,
+    pub author: String,
+    pub genre: String,
+    pub description: String,
+}
+
+/// Command 8: Create a new project with boilerplate structure
+#[tauri::command]
+fn create_new_project(base_path: String, config: ProjectConfig) -> Result<String, String> {
+    // Create project folder (use title as folder name)
+    // Only remove filesystem-unsafe characters, keep Thai and other Unicode chars
+    let unsafe_chars = ['/', '\\', ':', '*', '?', '"', '<', '>', '|'];
+    let sanitized_title = config.title
+        .chars()
+        .map(|c| if unsafe_chars.contains(&c) { '_' } else { c })
+        .collect::<String>()
+        .trim()
+        .to_string();
+    
+    let project_path = Path::new(&base_path).join(&sanitized_title);
+    
+    if project_path.exists() {
+        return Err(format!("Project folder already exists: {}", project_path.display()));
+    }
+    
+    // Create main project folder
+    fs::create_dir_all(&project_path)
+        .map_err(|e| format!("Failed to create project folder: {}", e))?;
+    
+    // Create chapters folder
+    let chapters_path = project_path.join("chapters");
+    fs::create_dir_all(&chapters_path)
+        .map_err(|e| format!("Failed to create chapters folder: {}", e))?;
+    
+    // Create codex folder
+    let codex_path = project_path.join("codex");
+    fs::create_dir_all(&codex_path)
+        .map_err(|e| format!("Failed to create codex folder: {}", e))?;
+    
+    // Create config.taleside file
+    let config_file = project_path.join("config.taleside");
+    let config_content = serde_json::json!({
+        "version": "1.0",
+        "title": config.title,
+        "author": config.author,
+        "genre": config.genre,
+        "description": config.description,
+        "createdAt": chrono::Utc::now().to_rfc3339()
+    });
+    
+    let config_json = serde_json::to_string_pretty(&config_content)
+        .map_err(|e| format!("Failed to serialize config: {}", e))?;
+    
+    fs::write(&config_file, config_json)
+        .map_err(|e| format!("Failed to write config file: {}", e))?;
+    
+    // Return the project path
+    Ok(project_path.to_string_lossy().to_string())
+}
+
+/// Command 9: Rename item
 #[tauri::command]
 fn rename_item(old_path: String, new_path: String) -> Result<(), String> {
     fs::rename(&old_path, &new_path).map_err(|e| format!("Failed to rename item: {}", e))
@@ -178,10 +241,9 @@ pub fn run() {
             read_project_dir,
             read_file_content,
             save_file_content,
-            save_file_content,
-            save_file_content,
             delete_file,
             create_folder,
+            create_new_project,
             rename_item
         ])
         .run(tauri::generate_context!())
