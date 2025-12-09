@@ -35,7 +35,7 @@ interface ContextMenuState {
             </span>
             <span class="text-sm truncate select-none pointer-events-none">{{ child.name }}</span>
             
-            <div class="ml-auto hidden group-hover:flex items-center gap-1 pr-2">
+            <div class="ml-auto hidden group-hover:flex items-center gap-1 pr-2 h-6">
               <button 
                 class="flex items-center justify-center p-1 text-[var(--text-primary)] hover:bg-[var(--bg-active)] rounded transition-colors"
                 title="New File"
