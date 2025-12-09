@@ -50,6 +50,7 @@ export function applyThemeToDocument(theme: Theme): void {
   root.style.setProperty('--text-secondary', colors.textSecondary);
   root.style.setProperty('--text-muted', colors.textMuted);
   root.style.setProperty('--text-inverse', colors.textInverse);
+  root.style.setProperty('--text-active', colors.textActive);
   
   root.style.setProperty('--accent', colors.accent);
   root.style.setProperty('--accent-hover', colors.accentHover);

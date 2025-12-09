@@ -20,6 +20,7 @@ export interface ThemeColors {
   textSecondary: string;  // Secondary/muted text
   textMuted: string;      // Very muted text (placeholders)
   textInverse: string;    // Text on accent backgrounds
+  textActive: string;     // Text for active/selected items
   
   // Accent colors
   accent: string;         // Primary accent (buttons, links)

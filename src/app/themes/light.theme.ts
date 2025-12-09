@@ -5,37 +5,38 @@ export const lightTheme: Theme = {
   name: 'สว่าง',
   nameEn: 'Light',
   colors: {
-    // Background colors
+    // Background colors - Notion Style
     bgPrimary: '#ffffff',
-    bgSecondary: '#f3f3f3',
-    bgTertiary: '#e8e8e8',
-    bgHover: '#d4d4d4',
-    bgActive: '#cce5ff',
+    bgSecondary: '#fbfbfa',
+    bgTertiary: '#f7f7f5',
+    bgHover: '#efeff5',
+    bgActive: '#eaeef5',
     
     // Border colors
-    borderColor: '#e0e0e0',
+    borderColor: '#e9e9e7',
     borderLight: '#f0f0f0',
     
-    // Text colors
-    textPrimary: '#333333',
-    textSecondary: '#666666',
-    textMuted: '#999999',
+    // Text colors - Notion Dark Grey
+    textPrimary: '#37352f',
+    textSecondary: '#787774',
+    textMuted: '#9b9a97',
     textInverse: '#ffffff',
+    textActive: '#2383e2',
     
-    // Accent colors
-    accent: '#0066cc',
-    accentHover: '#004999',
-    accentLight: '#e6f2ff',
+    // Accent colors - Notion Blue
+    accent: '#2383e2',
+    accentHover: '#1d70c2',
+    accentLight: '#e3f2fd',
     
     // Semantic colors
-    success: '#388e3c',
-    warning: '#f57c00',
-    error: '#d32f2f',
-    info: '#1976d2',
+    success: '#0f7b6c',
+    warning: '#dfab01',
+    error: '#eb5757',
+    info: '#2383e2',
     
     // Editor specific
     editorBg: '#ffffff',
-    lineNumberColor: '#999999',
-    lineNumberBorder: '#e0e0e0',
+    lineNumberColor: '#9b9a97',
+    lineNumberBorder: '#e9e9e7',
   }
 };

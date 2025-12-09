@@ -24,7 +24,7 @@ interface ShortcutItem {
             <button
               class="w-12 h-12 flex items-center justify-center rounded-lg transition-all"
               [class.bg-[var(--bg-active)]]="currentPage() === page.id"
-              [class.text-[var(--text-inverse)]]="currentPage() === page.id"
+              [class.text-[var(--text-active)]]="currentPage() === page.id"
               [class.text-[var(--text-secondary)]]="currentPage() !== page.id"
               [class.hover:text-[var(--text-inverse)]]="currentPage() !== page.id"
               [class.hover:bg-[var(--bg-hover)]]="currentPage() !== page.id"

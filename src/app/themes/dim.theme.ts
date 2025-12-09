@@ -5,37 +5,38 @@ export const dimTheme: Theme = {
   name: 'สลัว',
   nameEn: 'Dim',
   colors: {
-    // Background colors - Muted dark
-    bgPrimary: '#1d232a',
-    bgSecondary: '#242b33',
-    bgTertiary: '#2a323c',
-    bgHover: '#3b4654',
-    bgActive: '#4b5c6b',
+    // Background colors - Muted slate
+    bgPrimary: '#22272e',
+    bgSecondary: '#2d333b',
+    bgTertiary: '#373e47',
+    bgHover: '#444c56',
+    bgActive: '#373e47',
     
     // Border colors
-    borderColor: '#3b4654',
-    borderLight: '#4b5c6b',
+    borderColor: '#444c56',
+    borderLight: '#545d68',
     
-    // Text colors - Softer whites
-    textPrimary: '#b8c0c8',
-    textSecondary: '#8b949e',
-    textMuted: '#6b737d',
+    // Text colors - Relaxed White
+    textPrimary: '#adbac7',
+    textSecondary: '#768390',
+    textMuted: '#535a63',
     textInverse: '#1d232a',
+    textActive: '#adbac7',
     
-    // Accent colors - GitHub-like blue
-    accent: '#58a6ff',
-    accentHover: '#79b8ff',
-    accentLight: '#264f78',
+    // Accent colors - GitHub Dim Blue
+    accent: '#539bf5',
+    accentHover: '#72aeff',
+    accentLight: '#264065',
     
     // Semantic colors
-    success: '#56d364',
-    warning: '#e3b341',
-    error: '#f85149',
-    info: '#58a6ff',
+    success: '#57ab5a',
+    warning: '#c69026',
+    error: '#e5534b',
+    info: '#539bf5',
     
     // Editor specific
-    editorBg: '#1d232a',
-    lineNumberColor: '#6b737d',
-    lineNumberBorder: '#3b4654',
+    editorBg: '#22272e',
+    lineNumberColor: '#535a63',
+    lineNumberBorder: '#444c56',
   }
 };

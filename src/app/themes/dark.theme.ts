@@ -5,37 +5,38 @@ export const darkTheme: Theme = {
   name: 'มืด',
   nameEn: 'Dark',
   colors: {
-    // Background colors
-    bgPrimary: '#1e1e1e',
-    bgSecondary: '#252526',
-    bgTertiary: '#2d2d2d',
-    bgHover: '#3c3c3c',
+    // Background colors - Warmer Dark Grey
+    bgPrimary: '#212224',
+    bgSecondary: '#282a2d',
+    bgTertiary: '#2f3235',
+    bgHover: '#383b40',
     bgActive: '#094771',
     
     // Border colors
-    borderColor: '#3c3c3c',
-    borderLight: '#454545',
+    borderColor: '#383b40',
+    borderLight: '#45484d',
     
-    // Text colors
-    textPrimary: '#cccccc',
-    textSecondary: '#969696',
-    textMuted: '#6e6e6e',
+    // Text colors - Soft White
+    textPrimary: '#d4d4d4',
+    textSecondary: '#a0a0a0',
+    textMuted: '#707070',
     textInverse: '#ffffff',
+    textActive: '#ffffff',
     
-    // Accent colors
-    accent: '#007acc',
-    accentHover: '#1c8ad4',
-    accentLight: '#094771',
+    // Accent colors - Muted Blue
+    accent: '#2d8cf0',
+    accentHover: '#4da3f7',
+    accentLight: '#183b59',
     
     // Semantic colors
-    success: '#4caf50',
-    warning: '#ff9800',
-    error: '#f44336',
-    info: '#2196f3',
+    success: '#81c784',
+    warning: '#ffb74d',
+    error: '#e57373',
+    info: '#64b5f6',
     
     // Editor specific
-    editorBg: '#1e1e1e',
-    lineNumberColor: '#6e6e6e',
-    lineNumberBorder: '#3c3c3c',
+    editorBg: '#212224',
+    lineNumberColor: '#707070',
+    lineNumberBorder: '#383b40',
   }
 };
