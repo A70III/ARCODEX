@@ -5,12 +5,12 @@ export const lightTheme: Theme = {
   name: 'สว่าง',
   nameEn: 'Light',
   colors: {
-    // Background colors - Notion Style
+    // Background colors - Notion Style (Softer Panels)
     bgPrimary: '#ffffff',
-    bgSecondary: '#fbfbfa',
-    bgTertiary: '#f7f7f5',
-    bgHover: '#efeff5',
-    bgActive: '#eaeef5',
+    bgSecondary: '#f5f5f4',
+    bgTertiary: '#efefed',
+    bgHover: '#e5e5e3',
+    bgActive: '#dce7f0',
     
     // Border colors
     borderColor: '#e9e9e7',
