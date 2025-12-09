@@ -56,17 +56,30 @@ export class ChaptersService {
     this._chapters().filter(c => !c.groupId).sort((a, b) => a.order - b.order)
   );
 
-  // Computed: chapters grouped
+  // Computed: chapters grouped - optimized with Map for O(n) grouping
   readonly groupedChapters = computed(() => {
     const groups = this._groups();
     const chapters = this._chapters();
     
-    return groups.map(group => ({
-      ...group,
-      chapters: chapters
-        .filter(c => c.groupId === group.id)
-        .sort((a, b) => a.order - b.order)
-    })).sort((a, b) => a.order - b.order);
+    // Build Map for O(n) grouping instead of O(n*m) with filter
+    const chaptersMap = new Map<string, ChapterItem[]>();
+    for (const chapter of chapters) {
+      if (!chapter.groupId) continue;
+      if (!chaptersMap.has(chapter.groupId)) {
+        chaptersMap.set(chapter.groupId, []);
+      }
+      chaptersMap.get(chapter.groupId)!.push(chapter);
+    }
+    
+    // Map groups with pre-grouped chapters
+    return groups
+      .map(group => {
+        const groupChapters = chaptersMap.get(group.id) || [];
+        // Sort only once per group
+        groupChapters.sort((a, b) => a.order - b.order);
+        return { ...group, chapters: groupChapters };
+      })
+      .sort((a, b) => a.order - b.order);
   });
 
   // Get main config file path (for validation only)

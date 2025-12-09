@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed } from "@angular/core";
+import { Component, inject, signal, OnInit, OnDestroy, computed } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { CommonModule } from "@angular/common";
 import {
@@ -398,7 +398,7 @@ import { ProjectStateService } from "../../../services/project-state.service";
     </div>
   `,
 })
-export class ChaptersComponent implements OnInit {
+export class ChaptersComponent implements OnInit, OnDestroy {
   chaptersService = inject(ChaptersService);
   projectState = inject(ProjectStateService);
 
@@ -430,11 +430,18 @@ export class ChaptersComponent implements OnInit {
   // Computed
   allChapters = computed(() => this.chaptersService.chapters());
 
+  // Store listener reference for cleanup
+  private clickListener = () => {
+    this.contextMenu.set({ visible: false, x: 0, y: 0, type: "chapter" });
+  };
+
   constructor() {
     // Close context menu on click elsewhere
-    document.addEventListener("click", () => {
-      this.contextMenu.set({ visible: false, x: 0, y: 0, type: "chapter" });
-    });
+    document.addEventListener("click", this.clickListener);
+  }
+
+  ngOnDestroy(): void {
+    document.removeEventListener("click", this.clickListener);
   }
 
   ngOnInit(): void {

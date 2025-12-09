@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect } from "@angular/core";
+import { Component, inject, signal, effect, OnDestroy } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ProjectStateService } from "../../../services/project-state.service";
 import { ChaptersService } from "../../../services/chapters.service";
@@ -170,7 +170,7 @@ import { ChaptersComponent } from '../chapters/chapters.component';
     }
   `,
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnDestroy {
   projectState = inject(ProjectStateService);
   chaptersService = inject(ChaptersService);
 
@@ -179,6 +179,7 @@ export class SidebarComponent {
   isRefreshing = signal(false);
   creatingType = signal<"file" | "folder">("file");
   newItemName = "";
+  private lastLoadedChaptersPath: string | null = null;
 
   // Context Menu State
   contextMenu = signal<{ visible: boolean; x: number; y: number }>({
@@ -187,28 +188,42 @@ export class SidebarComponent {
     y: 0,
   });
 
+  // Store listener references for cleanup
+  private newFileListener = (e: Event) => {
+    this.startNewFile(e);
+  };
+  private newFolderListener = (e: Event) => {
+    this.startNewFolder(e);
+  };
+  private clickListener = () => {
+    this.contextMenu.set({ visible: false, x: 0, y: 0 });
+  };
+
   constructor() {
     // Listen for creation events
-    document.addEventListener("newFile", ((e: Event) => {
-      this.startNewFile(e);
-    }) as EventListener);
-
-    document.addEventListener("newFolder", ((e: Event) => {
-      this.startNewFolder(e);
-    }) as EventListener);
+    document.addEventListener("newFile", this.newFileListener);
+    document.addEventListener("newFolder", this.newFolderListener);
 
     // Close context menu on click elsewhere
-    document.addEventListener("click", () => {
-      this.contextMenu.set({ visible: false, x: 0, y: 0 });
-    });
+    document.addEventListener("click", this.clickListener);
 
     // Reload chapters when switching to chapters view
     effect(() => {
       const view = this.projectState.activeSidebarView();
-      if (view === 'chapters' && this.projectState.currentFolderPath()) {
+      const currentPath = this.projectState.currentFolderPath();
+      
+      // Load only if switching to chapters view and path is valid and changed/new
+      if (view === 'chapters' && currentPath && this.lastLoadedChaptersPath !== currentPath) {
         this.chaptersService.loadChapters();
+        this.lastLoadedChaptersPath = currentPath;
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    document.removeEventListener("newFile", this.newFileListener);
+    document.removeEventListener("newFolder", this.newFolderListener);
+    document.removeEventListener("click", this.clickListener);
   }
 
   onContextMenu(event: MouseEvent): void {

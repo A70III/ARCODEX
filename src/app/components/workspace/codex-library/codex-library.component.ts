@@ -305,12 +305,18 @@ export class CodexLibraryComponent implements OnInit {
     { value: 'other', label: 'อื่นๆ' },
   ];
 
+  private lastLoadedPath: string | null = null;
+
   constructor() {
     // Reload codex when view becomes active
     effect(() => {
       const view = this.projectState.activeSidebarView();
-      if (view === "codex" && this.projectState.currentFolderPath()) {
+      const currentPath = this.projectState.currentFolderPath();
+      
+      // Load only if view is active, path exists, and it's a new path or hasn't been loaded
+      if (view === "codex" && currentPath && this.lastLoadedPath !== currentPath) {
         this.codexService.loadCodex();
+        this.lastLoadedPath = currentPath;
       }
     });
   }

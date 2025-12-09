@@ -435,14 +435,25 @@ export class EditorComponent implements OnDestroy {
   private isUpdatingFromService = false;
   private editorState = signal({ bold: false, italic: false });
 
-  // Line numbers - computed from editor content
+  // Line numbers - computed from editor content with caching
   private _lineCount = signal(1);
   private lineCountTimer: any = null;
   private cachedLineHeight = 0;
+  private cachedLineNumbers: number[] = [];
+  private lastLineCount = 0;
 
   readonly lineNumbers = computed(() => {
     const count = Math.max(this._lineCount(), 20); // minimum 20 lines for visual consistency
-    return Array.from({ length: count }, (_, i) => i + 1);
+    
+    // Return cached array if count hasn't changed to avoid unnecessary re-renders
+    if (count === this.lastLineCount && this.cachedLineNumbers.length > 0) {
+      return this.cachedLineNumbers;
+    }
+    
+    // Build and cache new array
+    this.lastLineCount = count;
+    this.cachedLineNumbers = Array.from({ length: count }, (_, i) => i + 1);
+    return this.cachedLineNumbers;
   });
 
   constructor() {
@@ -674,9 +685,49 @@ export class EditorComponent implements OnDestroy {
   private parseContent(content: string): string {
     if (!content) return "<p></p>";
     if (content.startsWith("<")) return content;
-    return `<p>${content
-      .replace(/\n\n/g, "</p><p>")
-      .replace(/\n/g, "<br>")}</p>`;
+    
+    // Optimized single-pass parsing avoiding regex scan
+    const paragraphs: string[] = [];
+    let currentPara = '';
+    
+    for (const char of content) {
+      if (char === '\n') {
+        if (currentPara.endsWith('\n')) {
+          // Double newline detected (\n\n) - finish paragraph
+          // Remove the previous \n we just appended
+           currentPara = currentPara.slice(0, -1);
+           if (currentPara) paragraphs.push(currentPara);
+           currentPara = '';
+        } else {
+           // Single newline - potential start of break or just part of paragraph
+           // We'll append it for now, handle it if next is also newline
+           currentPara += '\n';
+        }
+      } else {
+        // Normal char
+        if (currentPara.endsWith('\n')) {
+           // Previous was newline, but this is not. So the previous newline means <br>
+           // Replace the trailing \n with <br> and continue
+           currentPara = currentPara.slice(0, -1) + '<br>' + char;
+        } else {
+           currentPara += char;
+        }
+      }
+    }
+    
+    // Handle remaining
+    if (currentPara) {
+       // If ended with \n, treat as break? Or ignore trailing?
+       // Usually ignore trailing \n at very end of file or treat as br
+       // Let's replace trailing \n with nothing for clean paragraph end
+       if (currentPara.endsWith('\n')) currentPara = currentPara.slice(0, -1);
+       if (currentPara) paragraphs.push(currentPara);
+    }
+    
+    // fallback for empty content that wasn't caught
+    if (paragraphs.length === 0) return "<p></p>";
+
+    return '<p>' + paragraphs.join('</p><p>') + '</p>';
   }
 
   // Toolbar state checks
