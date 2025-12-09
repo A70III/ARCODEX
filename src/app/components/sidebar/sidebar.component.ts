@@ -1,9 +1,11 @@
-import { Component, inject, signal } from "@angular/core";
+import { Component, inject, signal, effect } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ProjectStateService } from "../../services/project-state.service";
+import { ChaptersService } from "../../services/chapters.service";
 import { FileTreeComponent } from "../file-tree/file-tree.component";
 import { SearchPanelComponent } from "../search-panel/search-panel.component";
 import { ChaptersComponent } from "../chapters/chapters.component";
+
 
 @Component({
   selector: "app-sidebar",
@@ -170,6 +172,7 @@ import { ChaptersComponent } from "../chapters/chapters.component";
 })
 export class SidebarComponent {
   projectState = inject(ProjectStateService);
+  chaptersService = inject(ChaptersService);
 
   projectExpanded = signal(true);
   isCreating = signal(false);
@@ -197,6 +200,14 @@ export class SidebarComponent {
     // Close context menu on click elsewhere
     document.addEventListener("click", () => {
       this.contextMenu.set({ visible: false, x: 0, y: 0 });
+    });
+
+    // Reload chapters when switching to chapters view
+    effect(() => {
+      const view = this.projectState.activeSidebarView();
+      if (view === 'chapters' && this.projectState.currentFolderPath()) {
+        this.chaptersService.loadChapters();
+      }
     });
   }
 

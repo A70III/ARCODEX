@@ -1,619 +1,622 @@
-import { Component, inject, signal, computed, effect } from "@angular/core";
-import { CommonModule } from "@angular/common";
-import { FormsModule } from "@angular/forms";
-import { ProjectStateService } from "../../services/project-state.service";
-import { FileNode } from "../../models/file-node.model";
-import { invoke } from "@tauri-apps/api/core";
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { ChaptersService, ChapterItem, ChapterGroup } from '../../services/chapters.service';
+import { ProjectStateService } from '../../services/project-state.service';
 
-interface ChapterItem {
-  id: string;
-  type: "file" | "group";
-  name: string;
-  path: string; // Absolute path
-  children?: ChapterItem[];
-  expanded?: boolean;
-  selected?: boolean;
-}
-
-interface ChapterMetadata {
-  orders: { [folderPath: string]: string[] }; // folderPath -> list of filenames
-  groups: { [key: string]: { expanded: boolean } };
+interface GroupedChapters extends ChapterGroup {
+  chapters: ChapterItem[];
 }
 
 @Component({
-  selector: "app-chapters",
+  selector: 'app-chapters',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, CommonModule],
   template: `
-    <div
-      class="flex flex-col h-full bg-[var(--bg-secondary)] border-r border-[var(--border-color)]"
-      (click)="clearSelection()"
-    >
+    <div class="flex flex-col h-full bg-[var(--bg-secondary)]">
       <!-- Header -->
-      <div
-        class="flex items-center justify-between px-4 py-2 text-[11px] font-medium text-[var(--text-secondary)] tracking-wide uppercase"
-      >
-        <span>Chapters</span>
-        <div class="flex items-center gap-1">
-          <button
+      <div class="flex items-center justify-between px-4 py-2 text-[11px] font-medium text-[var(--text-secondary)] tracking-wide uppercase">
+        <span>รายชื่อตอน</span>
+        @if (chaptersService.configValid()) {
+          <button 
             class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
-            title="New Chapter"
-            (click)="$event.stopPropagation(); createNewChapter()"
+            title="เพิ่มตอนใหม่"
+            (click)="startAddChapter()"
           >
-            <span class="material-icons text-base">note_add</span>
+            <span class="material-icons text-base">add</span>
           </button>
-          <button
-            class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
-            title="New Group"
-            (click)="$event.stopPropagation(); createNewGroup()"
-          >
-            <span class="material-icons text-base">create_new_folder</span>
-          </button>
-          <button
-            class="p-1 hover:bg-[var(--bg-hover)] rounded text-[var(--text-primary)]"
-            title="Refresh"
-            (click)="$event.stopPropagation(); loadChapters()"
-          >
-            <span
-              class="material-icons text-base"
-              [class.animate-spin]="loading()"
-              >refresh</span
-            >
-          </button>
-        </div>
+        }
       </div>
+
+      <!-- Add Chapter Input -->
+      @if (isAdding()) {
+        <div class="px-3 pb-3">
+          <div class="flex items-center gap-2">
+            <input
+              #addInput
+              type="text"
+              class="flex-1 bg-[var(--bg-hover)] border border-[var(--accent)] text-[var(--text-primary)] text-sm px-2 py-1.5 rounded outline-none"
+              placeholder="ชื่อตอน..."
+              [(ngModel)]="newChapterName"
+              (keydown.enter)="confirmAddChapter()"
+              (keydown.escape)="cancelAdd()"
+              (blur)="onAddInputBlur()"
+            />
+          </div>
+        </div>
+      }
 
       <!-- Content -->
-      <div class="flex-1 overflow-y-auto">
-        @if (loading()) {
-        <div
-          class="flex items-center justify-center p-4 text-[var(--text-secondary)]"
-        >
-          <span class="loading loading-spinner loading-sm"></span>
-        </div>
-        } @else if (!chaptersFolderExists()) {
-        <div
-          class="flex flex-col items-center justify-center p-4 text-center gap-2"
-        >
-          <span class="text-[var(--text-secondary)]"
-            >No chapters folder found.</span
-          >
-          <button
-            class="px-3 py-1 bg-[var(--accent)] text-white rounded text-sm hover:bg-[var(--accent-hover)]"
-            (click)="createChaptersFolder()"
-          >
-            Create Folder
-          </button>
-        </div>
-        } @else {
-        <div class="flex flex-col pb-4">
-          @for (item of items(); track item.id) {
-          <ng-container
-            *ngTemplateOutlet="
-              itemTemplate;
-              context: { $implicit: item, depth: 0, parent: null }
-            "
-          ></ng-container>
-          } @if (items().length === 0) {
-          <div class="text-center text-[var(--text-muted)] text-xs mt-4 italic">
-            No chapters yet. Create one to start.
+      <div class="flex-1 overflow-y-auto px-2">
+        @if (!projectState.currentFolderPath()) {
+          <!-- No project opened -->
+          <div class="flex flex-col items-center justify-center py-8 text-center px-4">
+            <span class="material-icons text-4xl text-[var(--border-color)] mb-3">menu_book</span>
+            <p class="text-[var(--text-secondary)] text-sm">กรุณาเปิดโปรเจคก่อน</p>
           </div>
+        } @else if (chaptersService.loading()) {
+          <!-- Loading -->
+          <div class="flex items-center justify-center py-8">
+            <span class="material-icons text-2xl text-[var(--text-secondary)] animate-spin">autorenew</span>
+          </div>
+        } @else if (!chaptersService.configValid()) {
+          <!-- Invalid config -->
+          <div class="flex flex-col items-center justify-center py-8 text-center px-4">
+            <span class="material-icons text-4xl text-[var(--warning)] mb-3">warning</span>
+            <p class="text-[var(--text-secondary)] text-sm">{{ chaptersService.error() }}</p>
+            <p class="text-[var(--text-muted)] text-xs mt-2">โปรเจคนี้ไม่มีไฟล์ config.taleside ที่ถูกต้อง</p>
+          </div>
+        } @else if (allChapters().length === 0) {
+          <!-- No chapters -->
+          <div class="flex flex-col items-center justify-center py-8 text-center px-4">
+            <span class="material-icons text-4xl text-[var(--border-color)] mb-3">article</span>
+            <p class="text-[var(--text-secondary)] text-sm">ไม่มีตอนใดๆ</p>
+            <button 
+              class="mt-4 px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-inverse)] text-sm rounded transition-colors"
+              (click)="startAddChapter()"
+            >
+              เพิ่มตอน
+            </button>
+          </div>
+        } @else {
+          <!-- Chapter Groups -->
+          @for (group of chaptersService.groupedChapters(); track group.id) {
+            <div class="mb-2">
+              <!-- Group Header -->
+              <div 
+                class="flex items-center gap-1 py-1.5 px-2 cursor-pointer hover:bg-[var(--bg-hover)] rounded-sm group"
+                [class.bg-[var(--bg-hover)]]="selectedGroups().has(group.id)"
+                (click)="toggleGroupExpanded(group.id)"
+                (contextmenu)="onGroupContextMenu($event, group)"
+              >
+                <span class="material-icons text-sm text-[var(--text-primary)]">
+                  {{ group.expanded ? 'expand_more' : 'chevron_right' }}
+                </span>
+                <span class="material-icons text-base text-[var(--warning)]">folder</span>
+                @if (editingGroupId() === group.id) {
+                  <input
+                    type="text"
+                    class="flex-1 bg-[var(--bg-hover)] border border-[var(--accent)] text-[var(--text-primary)] text-sm px-1 rounded outline-none"
+                    [value]="group.name"
+                    (keydown.enter)="confirmRenameGroup($event, group.id)"
+                    (keydown.escape)="cancelRenameGroup()"
+                    (blur)="cancelRenameGroup()"
+                    (click)="$event.stopPropagation()"
+                  />
+                } @else {
+                  <span class="text-sm font-medium text-[var(--text-primary)] truncate flex-1">{{ group.name }}</span>
+                }
+                <span class="text-xs text-[var(--text-secondary)]">{{ group.chapters.length }}</span>
+              </div>
+              
+              <!-- Group Chapters -->
+              @if (group.expanded) {
+                <div class="ml-4">
+                  @for (chapter of group.chapters; track chapter.path; let i = $index) {
+                    <ng-container *ngTemplateOutlet="chapterItem; context: { $implicit: chapter, inGroup: true }"></ng-container>
+                  }
+                </div>
+              }
+            </div>
           }
-        </div>
+
+          <!-- Ungrouped Chapters -->
+          @for (chapter of chaptersService.ungroupedChapters(); track chapter.path; let i = $index) {
+            <ng-container *ngTemplateOutlet="chapterItem; context: { $implicit: chapter, inGroup: false }"></ng-container>
+          }
         }
       </div>
-    </div>
 
-    <ng-template #itemTemplate let-item let-depth="depth" let-parent="parent">
-      <div
-        class="group relative select-none"
-        [class.bg-[var(--bg-active)]]="item.selected"
-        (click)="$event.stopPropagation(); selectItem(item, $event)"
-        (dblclick)="openItem(item)"
-        draggable="true"
-        (dragstart)="onDragStart($event, item, parent)"
-        (dragover)="onDragOver($event, item)"
-        (drop)="onDrop($event, item, parent)"
-      >
-        <div
-          class="flex items-center gap-1 py-1 px-2 cursor-pointer hover:bg-[var(--bg-hover)] text-[var(--text-primary)]"
-          [style.padding-left.px]="depth * 16 + 8"
-        >
-          <!-- Drag Handle -->
-          <span
-            class="material-icons text-[var(--text-secondary)] text-sm opacity-0 group-hover:opacity-50 cursor-grab"
-            >drag_indicator</span
-          >
-
-          @if (item.type === 'group') {
-          <span
-            class="material-icons text-sm text-[var(--text-secondary)] cursor-pointer"
-            (click)="$event.stopPropagation(); toggleGroup(item)"
-          >
-            {{ item.expanded ? "expand_more" : "chevron_right" }}
-          </span>
-          <span class="material-icons text-[var(--warning)] text-base"
-            >folder</span
-          >
-          } @else {
-          <span class="w-4"></span>
-          <span class="material-icons text-[var(--text-secondary)] text-base"
-            >description</span
-          >
-          }
-
-          <!-- Name / Rename Input -->
-          @if (renamingId() === item.id) {
-          <input
-            #renameInput
-            type="text"
-            class="flex-1 bg-[var(--bg-input)] border border-[var(--accent)] text-[var(--text-primary)] text-sm px-1 py-0 rounded outline-none min-w-[50px]"
-            [ngModel]="item.name"
-            (keydown.enter)="confirmRename(item, renameInput.value)"
-            (keydown.escape)="cancelRename()"
-            (blur)="cancelRename()"
-            (click)="$event.stopPropagation()"
-            autoFocus
-          />
-          } @else {
-          <span class="flex-1 truncate text-sm">{{ item.name }}</span>
-          }
-
-          <!-- Actions -->
-          <div class="hidden group-hover:flex items-center gap-1 h-6">
-            <button
-              class="p-0.5 hover:bg-[var(--bg-active)] rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              title="Rename"
-              (click)="$event.stopPropagation(); startRename(item)"
+      <!-- Selection Actions Bar -->
+      @if (selectedChapters().size > 1) {
+        <div class="flex items-center justify-between px-3 py-2 bg-[var(--bg-hover)] border-t border-[var(--border-color)]">
+          <span class="text-xs text-[var(--text-secondary)]">เลือก {{ selectedChapters().size }} ตอน</span>
+          <div class="flex items-center gap-1">
+            <button 
+              class="px-2 py-1 text-xs bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-inverse)] rounded"
+              (click)="groupSelected()"
             >
-              <span class="material-icons text-xs">edit</span>
+              จัดกลุ่ม
             </button>
-            <button
-              class="p-0.5 hover:bg-[var(--bg-active)] rounded text-[var(--text-secondary)] hover:text-[var(--error)]"
-              title="Delete"
-              (click)="$event.stopPropagation(); deleteItem(item)"
+            <button 
+              class="px-2 py-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              (click)="clearSelection()"
             >
-              <span class="material-icons text-xs">delete</span>
+              ยกเลิก
             </button>
           </div>
         </div>
+      }
 
-        <!-- Children -->
-        @if (item.type === 'group' && item.expanded && item.children) { @for
-        (child of item.children; track child.id) {
-        <ng-container
-          *ngTemplateOutlet="
-            itemTemplate;
-            context: { $implicit: child, depth: depth + 1, parent: item }
-          "
-        ></ng-container>
-        } }
-      </div>
-    </ng-template>
-  `,
+      <!-- Chapter Item Template -->
+      <ng-template #chapterItem let-chapter let-inGroup="inGroup">
+        <div 
+          class="flex items-center gap-2 py-1.5 px-2 cursor-pointer hover:bg-[var(--bg-hover)] rounded-sm group border-l-2 transition-all"
+          [class.border-[var(--accent)]]="selectedChapters().has(chapter.path)"
+          [class.border-transparent]="!selectedChapters().has(chapter.path)"
+          [class.bg-[var(--bg-hover)]]="selectedChapters().has(chapter.path)"
+          [draggable]="true"
+          (click)="onChapterClick($event, chapter)"
+          (dblclick)="openChapter(chapter)"
+          (contextmenu)="onChapterContextMenu($event, chapter)"
+          (dragstart)="onDragStart($event, chapter)"
+          (dragover)="onDragOver($event, chapter)"
+          (dragenter)="onDragEnter($event, chapter)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event, chapter)"
+          (dragend)="onDragEnd()"
+        >
+          <span class="material-icons text-base text-[var(--info)]">description</span>
+          
+          @if (editingPath() === chapter.path) {
+            <input
+              type="text"
+              class="flex-1 bg-[var(--bg-hover)] border border-[var(--accent)] text-[var(--text-primary)] text-sm px-1 rounded outline-none"
+              [value]="chapter.name"
+              (keydown.enter)="confirmRename($event, chapter)"
+              (keydown.escape)="cancelRename()"
+              (blur)="cancelRename()"
+              (click)="$event.stopPropagation()"
+            />
+          } @else {
+            <span class="text-sm text-[var(--text-primary)] truncate flex-1">{{ chapter.name }}</span>
+          }
+          
+          <!-- Action buttons on hover -->
+          <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              class="p-0.5 hover:bg-[var(--bg-active)] rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              title="แก้ไขชื่อ"
+              (click)="startRename($event, chapter)"
+            >
+              <span class="material-icons text-sm">edit</span>
+            </button>
+            <button 
+              class="p-0.5 hover:bg-[var(--bg-active)] rounded text-[var(--text-secondary)] hover:text-[var(--error)]"
+              title="ลบ"
+              (click)="deleteChapter($event, chapter)"
+            >
+              <span class="material-icons text-sm">delete</span>
+            </button>
+          </div>
+        </div>
+      </ng-template>
+
+      <!-- Context Menu -->
+      @if (contextMenu().visible) {
+        <div 
+          class="fixed bg-[var(--bg-secondary)] border border-[var(--border-light)] shadow-lg z-[1000] py-1 min-w-[160px]"
+          [style.left.px]="contextMenu().x"
+          [style.top.px]="contextMenu().y"
+          (click)="$event.stopPropagation()"
+        >
+          @if (contextMenu().type === 'chapter') {
+            <button 
+              class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left"
+              (click)="contextMenuAction('open')"
+            >
+              <span class="material-icons text-base">open_in_new</span>
+              เปิด
+            </button>
+            <button 
+              class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left"
+              (click)="contextMenuAction('rename')"
+            >
+              <span class="material-icons text-base">edit</span>
+              แก้ไขชื่อ
+            </button>
+            <button 
+              class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left"
+              (click)="contextMenuAction('delete')"
+            >
+              <span class="material-icons text-base text-[var(--error)]">delete</span>
+              ลบ
+            </button>
+            <div class="border-t border-[var(--border-color)] my-1"></div>
+            @if (contextMenu().chapter?.groupId) {
+              <button 
+                class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left"
+                (click)="contextMenuAction('ungroup')"
+              >
+                <span class="material-icons text-base">folder_off</span>
+                ยกเลิกการจัดกลุ่ม
+              </button>
+            }
+          } @else if (contextMenu().type === 'group') {
+            <button 
+              class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left"
+              (click)="contextMenuAction('renameGroup')"
+            >
+              <span class="material-icons text-base">edit</span>
+              แก้ไขชื่อกลุ่ม
+            </button>
+            <button 
+              class="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-active)] text-left"
+              (click)="contextMenuAction('deleteGroup')"
+            >
+              <span class="material-icons text-base text-[var(--error)]">delete</span>
+              ลบกลุ่ม
+            </button>
+          }
+        </div>
+      }
+
+      <!-- Group Name Dialog -->
+      @if (showGroupDialog()) {
+        <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-[1001]" (click)="cancelGroupDialog()">
+          <div class="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-4 w-80 shadow-xl" (click)="$event.stopPropagation()">
+            <h3 class="text-sm font-medium text-[var(--text-primary)] mb-3">ตั้งชื่อกลุ่ม</h3>
+            <input
+              type="text"
+              class="w-full bg-[var(--bg-hover)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm px-3 py-2 rounded outline-none focus:border-[var(--accent)]"
+              placeholder="เช่น เล่ม 1, องค์แรก..."
+              [(ngModel)]="groupName"
+              (keydown.enter)="confirmGroupDialog()"
+              (keydown.escape)="cancelGroupDialog()"
+            />
+            <div class="flex justify-end gap-2 mt-4">
+              <button 
+                class="px-3 py-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                (click)="cancelGroupDialog()"
+              >
+                ยกเลิก
+              </button>
+              <button 
+                class="px-3 py-1.5 text-sm bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-inverse)] rounded"
+                (click)="confirmGroupDialog()"
+              >
+                สร้างกลุ่ม
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  `
 })
-export class ChaptersComponent {
+export class ChaptersComponent implements OnInit {
+  chaptersService = inject(ChaptersService);
   projectState = inject(ProjectStateService);
 
-  items = signal<ChapterItem[]>([]);
-  loading = signal<boolean>(false);
-  chaptersFolderExists = signal<boolean>(false);
-  renamingId = signal<string | null>(null);
+  // UI State
+  isAdding = signal(false);
+  newChapterName = '';
+  editingPath = signal<string | null>(null);
+  editingGroupId = signal<string | null>(null);
+  
+  // Selection state
+  selectedChapters = signal<Set<string>>(new Set());
+  selectedGroups = signal<Set<string>>(new Set());
+  lastSelectedPath = signal<string | null>(null);
 
-  // For drag and drop
-  draggedItem: ChapterItem | null = null;
-  draggedItemParent: ChapterItem | null = null;
+  // Drag and drop state
+  draggedChapter = signal<ChapterItem | null>(null);
+  dragOverPath = signal<string | null>(null);
+
+  // Context menu state
+  contextMenu = signal<{
+    visible: boolean;
+    x: number;
+    y: number;
+    type: 'chapter' | 'group';
+    chapter?: ChapterItem;
+    group?: ChapterGroup;
+  }>({ visible: false, x: 0, y: 0, type: 'chapter' });
+
+  // Group dialog state
+  showGroupDialog = signal(false);
+  groupName = '';
+
+  // Computed
+  allChapters = computed(() => this.chaptersService.chapters());
 
   constructor() {
-    effect(() => {
-      const path = this.projectState.currentFolderPath();
-      if (path) {
-        this.loadChapters();
-      } else {
-        this.items.set([]);
-        this.chaptersFolderExists.set(false);
-      }
+    // Close context menu on click elsewhere
+    document.addEventListener('click', () => {
+      this.contextMenu.set({ visible: false, x: 0, y: 0, type: 'chapter' });
     });
   }
 
-  async loadChapters() {
-    this.loading.set(true);
-    try {
-      const projectPath = this.projectState.currentFolderPath();
-      if (!projectPath) return;
+  ngOnInit(): void {
+    // Load chapters when project is opened
+    if (this.projectState.currentFolderPath()) {
+      this.chaptersService.loadChapters();
+    }
 
-      const tree = await invoke<FileNode>("read_project_dir", {
-        path: projectPath,
-      });
-      const chaptersNode = tree.children?.find(
-        (c) => c.name === "chapters" && c.is_dir
-      );
+    // Watch for project changes - use effect-like behavior
+    // Since we don't have effect here, we'll rely on sidebar switching
+  }
 
-      if (chaptersNode) {
-        this.chaptersFolderExists.set(true);
+  // === Add Chapter ===
+  startAddChapter(): void {
+    this.isAdding.set(true);
+    this.newChapterName = '';
+    setTimeout(() => {
+      const input = document.querySelector('input[placeholder="ชื่อตอน..."]') as HTMLInputElement;
+      input?.focus();
+    }, 0);
+  }
 
-        // Load metadata
-        let metadata: ChapterMetadata = { orders: {}, groups: {} };
-        const metadataPath = `${chaptersNode.path}/chapters.json`;
-        try {
-          const content = await invoke<string>("read_file_content", {
-            path: metadataPath,
-          });
-          const parsed = JSON.parse(content);
-          // Migration or fallback
-          if (Array.isArray(parsed.order)) {
-            metadata.orders = { ".": parsed.order };
-            metadata.groups = parsed.groups || {};
-          } else {
-            metadata = parsed;
-          }
-        } catch (e) {
-          // Metadata doesn't exist or invalid, ignore
+  async confirmAddChapter(): Promise<void> {
+    if (this.newChapterName.trim()) {
+      await this.chaptersService.createChapter(this.newChapterName);
+    }
+    this.cancelAdd();
+  }
+
+  cancelAdd(): void {
+    this.isAdding.set(false);
+    this.newChapterName = '';
+  }
+
+  onAddInputBlur(): void {
+    setTimeout(() => {
+      if (this.isAdding()) {
+        this.cancelAdd();
+      }
+    }, 150);
+  }
+
+  // === Rename Chapter ===
+  startRename(event: Event, chapter: ChapterItem): void {
+    event.stopPropagation();
+    this.editingPath.set(chapter.path);
+    setTimeout(() => {
+      const input = document.querySelector(`input[value="${chapter.name}"]`) as HTMLInputElement;
+      input?.focus();
+      input?.select();
+    }, 0);
+  }
+
+  async confirmRename(event: Event, chapter: ChapterItem): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const newName = input.value.trim();
+    if (newName && newName !== chapter.name) {
+      await this.chaptersService.renameChapter(chapter.path, newName);
+    }
+    this.cancelRename();
+  }
+
+  cancelRename(): void {
+    this.editingPath.set(null);
+  }
+
+  // === Delete Chapter ===
+  async deleteChapter(event: Event, chapter: ChapterItem): Promise<void> {
+    event.stopPropagation();
+    if (confirm(`ต้องการลบ "${chapter.name}" หรือไม่?`)) {
+      await this.chaptersService.deleteChapter(chapter.path);
+    }
+  }
+
+  // === Open Chapter ===
+  openChapter(chapter: ChapterItem): void {
+    this.chaptersService.openChapter(chapter.path);
+  }
+
+  // === Selection ===
+  onChapterClick(event: MouseEvent, chapter: ChapterItem): void {
+    if (event.shiftKey && this.lastSelectedPath()) {
+      // Range selection
+      const chapters = this.chaptersService.chapters();
+      const lastIndex = chapters.findIndex(c => c.path === this.lastSelectedPath());
+      const currentIndex = chapters.findIndex(c => c.path === chapter.path);
+      
+      if (lastIndex !== -1 && currentIndex !== -1) {
+        const start = Math.min(lastIndex, currentIndex);
+        const end = Math.max(lastIndex, currentIndex);
+        
+        const newSelection = new Set(this.selectedChapters());
+        for (let i = start; i <= end; i++) {
+          newSelection.add(chapters[i].path);
         }
-
-        this.items.set(
-          this.processNodes(chaptersNode.children || [], metadata, ".")
-        );
-      } else {
-        this.chaptersFolderExists.set(false);
-        this.items.set([]);
+        this.selectedChapters.set(newSelection);
       }
-    } catch (error) {
-      console.error("Failed to load chapters:", error);
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
-  processNodes(
-    nodes: FileNode[],
-    metadata: ChapterMetadata,
-    relativePath: string
-  ): ChapterItem[] {
-    // Filter out chapters.json
-    const filteredNodes = nodes.filter((n) => n.name !== "chapters.json");
-
-    // Map to items
-    const items: ChapterItem[] = filteredNodes.map((node) => {
-      const nodeRelativePath =
-        relativePath === "." ? node.name : `${relativePath}/${node.name}`;
-      return {
-        id: node.path,
-        type: node.is_dir ? "group" : "file",
-        name: node.name,
-        path: node.path,
-        children: node.children
-          ? this.processNodes(node.children, metadata, nodeRelativePath)
-          : [],
-        expanded: metadata.groups[node.path]?.expanded ?? false, // Use path as key for uniqueness
-        selected: false,
-      };
-    });
-
-    // Sort based on metadata.orders[relativePath]
-    const orderList = metadata.orders[relativePath] || [];
-    const orderMap = new Map(orderList.map((name, index) => [name, index]));
-
-    items.sort((a, b) => {
-      const indexA = orderMap.has(a.name) ? orderMap.get(a.name)! : -1;
-      const indexB = orderMap.has(b.name) ? orderMap.get(b.name)! : -1;
-
-      if (indexA === -1 && indexB === -1) {
-        return a.name.localeCompare(b.name);
-      }
-
-      if (indexA === -1) return -1; // a is new, so it goes to top
-      if (indexB === -1) return 1; // b is new, so it goes to top
-
-      return indexA - indexB;
-    });
-
-    return items;
-  }
-
-  async saveMetadata() {
-    const projectPath = this.projectState.currentFolderPath();
-    if (!projectPath) return;
-
-    const separator = projectPath.includes("\\") ? "\\" : "/";
-    const chaptersPath = `${projectPath}${separator}chapters`;
-    const metadataPath = `${chaptersPath}${separator}chapters.json`;
-
-    const metadata: ChapterMetadata = {
-      orders: {},
-      groups: {},
-    };
-
-    const traverse = (items: ChapterItem[], relativePath: string) => {
-      metadata.orders[relativePath] = items.map((i) => i.name);
-
-      items.forEach((item) => {
-        if (item.type === "group") {
-          metadata.groups[item.path] = { expanded: item.expanded || false };
-          if (item.children) {
-            const nodeRelativePath =
-              relativePath === "." ? item.name : `${relativePath}/${item.name}`;
-            traverse(item.children, nodeRelativePath);
-          }
-        }
-      });
-    };
-
-    traverse(this.items(), ".");
-
-    try {
-      await invoke("save_file_content", {
-        path: metadataPath,
-        content: JSON.stringify(metadata, null, 2),
-      });
-    } catch (error) {
-      console.error("Failed to save metadata:", error);
-    }
-  }
-
-  async createChaptersFolder() {
-    const projectPath = this.projectState.currentFolderPath();
-    if (!projectPath) return;
-
-    const separator = projectPath.includes("\\") ? "\\" : "/";
-    const chaptersPath = `${projectPath}${separator}chapters`;
-
-    try {
-      await invoke("create_folder", { path: chaptersPath });
-      await this.loadChapters();
-    } catch (error) {
-      console.error("Failed to create chapters folder:", error);
-    }
-  }
-
-  async createNewChapter() {
-    if (!this.chaptersFolderExists()) await this.createChaptersFolder();
-
-    const projectPath = this.projectState.currentFolderPath();
-    const separator = projectPath.includes("\\") ? "\\" : "/";
-    const chaptersPath = `${projectPath}${separator}chapters`;
-
-    // Generate unique name
-    let name = "Untitled.md";
-    let counter = 1;
-    // Check if exists in current items (shallow check)
-    while (this.items().some((i) => i.name === name)) {
-      name = `Untitled ${counter}.md`;
-      counter++;
-    }
-
-    const filePath = `${chaptersPath}${separator}${name}`;
-
-    try {
-      await invoke("save_file_content", {
-        path: filePath,
-        content: "# New Chapter\n",
-      });
-      await this.loadChapters();
-
-      // Save metadata to ensure order is preserved (new item at top)
-      await this.saveMetadata();
-
-      const newItem = this.items().find((i) => i.path === filePath);
-      if (newItem) {
-        this.startRename(newItem);
-      }
-    } catch (error) {
-      console.error("Failed to create chapter:", error);
-    }
-  }
-
-  async createNewGroup() {
-    if (!this.chaptersFolderExists()) await this.createChaptersFolder();
-
-    const projectPath = this.projectState.currentFolderPath();
-    const separator = projectPath.includes("\\") ? "\\" : "/";
-    const chaptersPath = `${projectPath}${separator}chapters`;
-
-    let name = "New Group";
-    let counter = 1;
-    while (this.items().some((i) => i.name === name)) {
-      name = `New Group ${counter}`;
-      counter++;
-    }
-
-    const folderPath = `${chaptersPath}${separator}${name}`;
-
-    try {
-      await invoke("create_folder", { path: folderPath });
-      await this.loadChapters();
-      await this.saveMetadata();
-
-      const newItem = this.items().find((i) => i.path === folderPath);
-      if (newItem) {
-        this.startRename(newItem);
-      }
-    } catch (error) {
-      console.error("Failed to create group:", error);
-    }
-  }
-
-  selectItem(item: ChapterItem, event: MouseEvent) {
-    if (event.ctrlKey || event.metaKey) {
+    } else if (event.ctrlKey || event.metaKey) {
       // Toggle selection
-      item.selected = !item.selected;
-    } else if (event.shiftKey) {
-      // Range selection (simplified for now)
-      item.selected = true;
+      const newSelection = new Set(this.selectedChapters());
+      if (newSelection.has(chapter.path)) {
+        newSelection.delete(chapter.path);
+      } else {
+        newSelection.add(chapter.path);
+      }
+      this.selectedChapters.set(newSelection);
+      this.lastSelectedPath.set(chapter.path);
     } else {
       // Single selection
+      this.selectedChapters.set(new Set([chapter.path]));
+      this.lastSelectedPath.set(chapter.path);
+    }
+  }
+
+  clearSelection(): void {
+    this.selectedChapters.set(new Set());
+    this.lastSelectedPath.set(null);
+  }
+
+  // === Grouping ===
+  groupSelected(): void {
+    if (this.selectedChapters().size > 1) {
+      this.groupName = '';
+      this.showGroupDialog.set(true);
+      setTimeout(() => {
+        const input = document.querySelector('input[placeholder*="เล่ม"]') as HTMLInputElement;
+        input?.focus();
+      }, 0);
+    }
+  }
+
+  async confirmGroupDialog(): Promise<void> {
+    if (this.groupName.trim()) {
+      await this.chaptersService.createGroup(
+        Array.from(this.selectedChapters()),
+        this.groupName.trim()
+      );
       this.clearSelection();
-      item.selected = true;
     }
+    this.cancelGroupDialog();
   }
 
-  clearSelection() {
-    const clear = (items: ChapterItem[]) => {
-      items.forEach((i) => {
-        i.selected = false;
-        if (i.children) clear(i.children);
-      });
-    };
-    clear(this.items());
+  cancelGroupDialog(): void {
+    this.showGroupDialog.set(false);
+    this.groupName = '';
   }
 
-  toggleGroup(item: ChapterItem) {
-    if (item.type === "group") {
-      item.expanded = !item.expanded;
-      this.saveMetadata();
+  toggleGroupExpanded(groupId: string): void {
+    this.chaptersService.toggleGroupExpanded(groupId);
+  }
+
+  // === Group Rename ===
+  startRenameGroup(group: ChapterGroup): void {
+    this.editingGroupId.set(group.id);
+  }
+
+  async confirmRenameGroup(event: Event, groupId: string): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const newName = input.value.trim();
+    if (newName) {
+      await this.chaptersService.renameGroup(groupId, newName);
     }
+    this.cancelRenameGroup();
   }
 
-  openItem(item: ChapterItem) {
-    if (item.type === "file") {
-      this.projectState.openFile(item.path);
-    }
+  cancelRenameGroup(): void {
+    this.editingGroupId.set(null);
   }
 
-  startRename(item: ChapterItem) {
-    this.renamingId.set(item.id);
-  }
-
-  async confirmRename(item: ChapterItem, newName: string) {
-    if (!newName || newName === item.name) {
-      this.cancelRename();
-      return;
-    }
-
-    const parentPath = item.path.substring(
-      0,
-      item.path.lastIndexOf(item.path.includes("\\") ? "\\" : "/")
-    );
-    const separator = item.path.includes("\\") ? "\\" : "/";
-    const newPath = `${parentPath}${separator}${newName}`;
-
-    try {
-      await invoke("rename_item", { oldPath: item.path, newPath });
-      this.cancelRename();
-      await this.loadChapters();
-      await this.saveMetadata();
-    } catch (error) {
-      console.error("Failed to rename:", error);
-    }
-  }
-
-  cancelRename() {
-    this.renamingId.set(null);
-  }
-
-  async deleteItem(item: ChapterItem) {
-    if (!confirm(`Are you sure you want to delete ${item.name}?`)) return;
-
-    try {
-      await invoke("delete_file", { path: item.path });
-      await this.loadChapters();
-      await this.saveMetadata();
-    } catch (error) {
-      console.error("Failed to delete:", error);
-    }
-  }
-
-  // Drag and Drop
-  onDragStart(event: DragEvent, item: ChapterItem, parent: ChapterItem | null) {
-    this.draggedItem = item;
-    this.draggedItemParent = parent;
-    event.dataTransfer?.setData("text/plain", item.id);
+  // === Drag and Drop ===
+  onDragStart(event: DragEvent, chapter: ChapterItem): void {
+    this.draggedChapter.set(chapter);
     if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', chapter.path);
     }
   }
 
-  onDragOver(event: DragEvent, targetItem: ChapterItem) {
+  onDragOver(event: DragEvent, chapter: ChapterItem): void {
     event.preventDefault();
-    // Add visual feedback
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
   }
 
-  async onDrop(
-    event: DragEvent,
-    targetItem: ChapterItem,
-    targetParent: ChapterItem | null
-  ) {
+  onDragEnter(event: DragEvent, chapter: ChapterItem): void {
     event.preventDefault();
-    if (!this.draggedItem || this.draggedItem.id === targetItem.id) return;
+    if (this.draggedChapter() && this.draggedChapter()!.path !== chapter.path) {
+      this.dragOverPath.set(chapter.path);
+    }
+  }
 
-    // If dropping onto a group, move into it
-    if (targetItem.type === "group" && this.draggedItemParent !== targetItem) {
-      const separator = targetItem.path.includes("\\") ? "\\" : "/";
-      const newPath = `${targetItem.path}${separator}${this.draggedItem.name}`;
-      try {
-        await invoke("rename_item", {
-          oldPath: this.draggedItem.path,
-          newPath,
-        });
-        await this.loadChapters();
-        await this.saveMetadata();
-      } catch (error) {
-        console.error("Failed to move item:", error);
-      }
-    } else {
-      // Reordering within the same list
-      // We need to find the list containing draggedItem and targetItem
-      // If they are in different lists (different parents), we might need to move first
+  onDragLeave(event: DragEvent): void {
+    this.dragOverPath.set(null);
+  }
 
-      if (this.draggedItemParent?.id !== targetParent?.id) {
-        // Moving to a different folder/level
-        // First move the file physically
-        // Then reorder
-        // For simplicity, let's just move it to the target folder first
-        // But wait, if targetParent is null, it's root.
-
-        const targetFolder = targetParent
-          ? targetParent.path
-          : this.items()[0]?.path.split(/[/\\]/).slice(0, -1).join("/") || "";
-        // Actually we can get target folder from targetItem path
-        const separator = targetItem.path.includes("\\") ? "\\" : "/";
-        const targetFolderPath = targetItem.path.substring(
-          0,
-          targetItem.path.lastIndexOf(separator)
-        );
-
-        const newPath = `${targetFolderPath}${separator}${this.draggedItem.name}`;
-
-        try {
-          await invoke("rename_item", {
-            oldPath: this.draggedItem.path,
-            newPath,
-          });
-          // After move, we need to reload to get new paths, then we can reorder?
-          // Or we can just reload and let the user reorder again.
-          // Better: reload, then find the items and swap.
-          await this.loadChapters();
-          // Reordering logic after move is complex because IDs change.
-          // Let's just stop here for cross-folder drop.
-          await this.saveMetadata();
-          return;
-        } catch (error) {
-          console.error("Failed to move item:", error);
-          return;
-        }
-      }
-
-      // Same parent reordering
-      const list = targetParent ? targetParent.children! : this.items();
-
-      // We need to modify the list in place or create new list
-      // Since 'list' is a reference to the object in items(), modifying it might work if we trigger update
-      // But items() is a signal. We need to update the signal.
-
-      const draggedIndex = list.findIndex((i) => i.id === this.draggedItem!.id);
-      const targetIndex = list.findIndex((i) => i.id === targetItem.id);
-
+  async onDrop(event: DragEvent, targetChapter: ChapterItem): Promise<void> {
+    event.preventDefault();
+    const dragged = this.draggedChapter();
+    
+    if (dragged && dragged.path !== targetChapter.path) {
+      const chapters = this.chaptersService.chapters();
+      const orderedPaths = chapters.map(c => c.path);
+      
+      // Remove dragged from current position
+      const draggedIndex = orderedPaths.indexOf(dragged.path);
+      const targetIndex = orderedPaths.indexOf(targetChapter.path);
+      
       if (draggedIndex !== -1 && targetIndex !== -1) {
-        const item = list.splice(draggedIndex, 1)[0];
-        list.splice(targetIndex, 0, item);
-
-        // Trigger signal update
-        this.items.update((items) => [...items]);
-        await this.saveMetadata();
+        orderedPaths.splice(draggedIndex, 1);
+        orderedPaths.splice(targetIndex, 0, dragged.path);
+        await this.chaptersService.reorderChapters(orderedPaths);
       }
     }
+    
+    this.draggedChapter.set(null);
+    this.dragOverPath.set(null);
+  }
 
-    this.draggedItem = null;
-    this.draggedItemParent = null;
+  onDragEnd(): void {
+    this.draggedChapter.set(null);
+    this.dragOverPath.set(null);
+  }
+
+  // === Context Menu ===
+  onChapterContextMenu(event: MouseEvent, chapter: ChapterItem): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.contextMenu.set({
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      type: 'chapter',
+      chapter
+    });
+  }
+
+  onGroupContextMenu(event: MouseEvent, group: ChapterGroup): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.contextMenu.set({
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      type: 'group',
+      group
+    });
+  }
+
+  async contextMenuAction(action: string): Promise<void> {
+    const menu = this.contextMenu();
+    this.contextMenu.set({ visible: false, x: 0, y: 0, type: 'chapter' });
+
+    switch (action) {
+      case 'open':
+        if (menu.chapter) this.openChapter(menu.chapter);
+        break;
+      case 'rename':
+        if (menu.chapter) this.startRename({ stopPropagation: () => {} } as any, menu.chapter);
+        break;
+      case 'delete':
+        if (menu.chapter) {
+          if (confirm(`ต้องการลบ "${menu.chapter.name}" หรือไม่?`)) {
+            await this.chaptersService.deleteChapter(menu.chapter.path);
+          }
+        }
+        break;
+      case 'ungroup':
+        if (menu.chapter) {
+          await this.chaptersService.ungroupChapter(menu.chapter.path);
+        }
+        break;
+      case 'renameGroup':
+        if (menu.group) this.startRenameGroup(menu.group);
+        break;
+      case 'deleteGroup':
+        if (menu.group) {
+          if (confirm(`ต้องการลบกลุ่ม "${menu.group.name}" หรือไม่? (ตอนในกลุ่มจะไม่ถูกลบ)`)) {
+            await this.chaptersService.deleteGroup(menu.group.id);
+          }
+        }
+        break;
+    }
   }
 }
