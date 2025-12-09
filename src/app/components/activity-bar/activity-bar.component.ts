@@ -67,6 +67,7 @@ export class ActivityBarComponent {
     { icon: "folder", label: "Explorer", id: "explorer" },
     { icon: "search", label: "Search", id: "search" },
     { icon: "format_list_bulleted", label: "Chapters", id: "chapters" },
+    { icon: "auto_stories", label: "Codex Library", id: "codex" },
   ];
 
   bottomItems: ActivityItem[] = [

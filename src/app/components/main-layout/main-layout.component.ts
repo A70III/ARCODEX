@@ -9,6 +9,7 @@ import { InfoPanelComponent } from '../info-panel/info-panel.component';
 import { ConfirmationModalComponent } from '../ui/confirmation-modal.component';
 import { SettingsDialogComponent } from '../ui/settings-dialog.component';
 import { NewProjectDialogComponent } from '../ui/new-project-dialog.component';
+import { CodexLibraryComponent } from '../codex-library/codex-library.component';
 import { ProjectStateService } from '../../services/project-state.service';
 import { SettingsService } from '../../services/settings.service';
 
@@ -25,7 +26,8 @@ import { SettingsService } from '../../services/settings.service';
     InfoPanelComponent,
     ConfirmationModalComponent,
     SettingsDialogComponent,
-    NewProjectDialogComponent
+    NewProjectDialogComponent,
+    CodexLibraryComponent
   ],
   template: `
     <div class="flex flex-col h-screen w-screen overflow-hidden bg-[var(--bg-primary)]">
@@ -41,16 +43,21 @@ import { SettingsService } from '../../services/settings.service';
           <app-activity-bar />
         }
         
-        <!-- Sidebar (250px) - hidden in focus mode -->
-        @if (!projectState.focusMode() && projectState.sidebarVisible()) {
+        <!-- Sidebar (250px) - hidden in focus mode or codex mode -->
+        @if (!projectState.focusMode() && projectState.sidebarVisible() && projectState.activeSidebarView() !== 'codex') {
           <app-sidebar class="w-[250px] flex-shrink-0" />
         }
         
-        <!-- Editor (flex-1) -->
-        <app-editor class="flex-1 min-w-0 overflow-hidden" />
+        <!-- Codex Library - full area when active -->
+        @if (projectState.activeSidebarView() === 'codex') {
+          <app-codex-library class="flex-1 min-w-0 overflow-hidden" />
+        } @else {
+          <!-- Editor (flex-1) -->
+          <app-editor class="flex-1 min-w-0 overflow-hidden" />
+        }
         
-        <!-- Info Panel / Right Sidebar (280px) - hidden in focus mode -->
-        @if (!projectState.focusMode() && projectState.infoPanelVisible()) {
+        <!-- Info Panel / Right Sidebar (280px) - hidden in focus mode or codex mode -->
+        @if (!projectState.focusMode() && projectState.infoPanelVisible() && projectState.activeSidebarView() !== 'codex') {
           <app-info-panel class="w-[280px] flex-shrink-0" />
         }
 
