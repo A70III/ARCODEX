@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { invoke } from '@tauri-apps/api/core';
 import { ProjectStateService } from './project-state.service';
 
@@ -13,16 +13,34 @@ export interface CodexSubmenuItem {
 export class CodexService {
   private projectState = inject(ProjectStateService);
 
+  constructor() {
+    // Auto-reset when project is closed
+    effect(() => {
+      const path = this.projectState.currentFolderPath();
+      if (!path) {
+        this.reset();
+      }
+    });
+  }
+
   // State signals
   private _folders = signal<string[]>([]);
   private _customLabels = signal<Record<string, string>>({});
   private _loading = signal(false);
   private _activeTab = signal<string>('all');
+  
+  // Project info signals
+  private _projectTitle = signal<string>('');
+  private _projectAuthor = signal<string>('');
+  private _projectGenre = signal<string>('');
 
   // Public readonly signals
   readonly folders = this._folders.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly activeTab = this._activeTab.asReadonly();
+  readonly projectTitle = this._projectTitle.asReadonly();
+  readonly projectAuthor = this._projectAuthor.asReadonly();
+  readonly projectGenre = this._projectGenre.asReadonly();
 
   // Computed: submenu items with labels
   readonly submenuItems = computed(() => {
@@ -59,6 +77,9 @@ export class CodexService {
       
       // Load custom labels from config.taleside
       await this.loadSubmenuConfig();
+      
+      // Load project info
+      await this.loadProjectInfo();
       
     } catch (e) {
       console.error('Failed to load codex:', e);
@@ -120,6 +141,17 @@ export class CodexService {
       console.error('Failed to load submenu config:', e);
       this._customLabels.set({});
     }
+  }
+
+  // Reset all state (called when project is closed)
+  reset(): void {
+    this._folders.set([]);
+    this._customLabels.set({});
+    this._activeTab.set('all');
+    this._projectTitle.set('');
+    this._projectAuthor.set('');
+    this._projectGenre.set('');
+    this._loading.set(false);
   }
 
   // Set active tab
@@ -189,9 +221,83 @@ export class CodexService {
     }
   }
 
+  // Load project info from config.taleside
+  private async loadProjectInfo(): Promise<void> {
+    const configPath = this.getConfigPath();
+    if (!configPath) return;
+
+    try {
+      const content = await invoke<string>('read_file_content', { path: configPath });
+      const config = JSON.parse(content);
+      
+      this._projectTitle.set(config.title || '');
+      this._projectAuthor.set(config.author || '');
+      this._projectGenre.set(config.genre || '');
+    } catch (e) {
+      console.error('Failed to load project info:', e);
+    }
+  }
+
+  // Update project info in config.taleside
+  async updateProjectInfo(title: string, author: string, genre: string): Promise<boolean> {
+    const configPath = this.getConfigPath();
+    if (!configPath) return false;
+
+    try {
+      // Read existing config
+      const content = await invoke<string>('read_file_content', { path: configPath });
+      const config = JSON.parse(content);
+
+      // Update fields
+      config.title = title;
+      config.author = author;
+      config.genre = genre;
+
+      // Save updated config
+      const newContent = JSON.stringify(config, null, 2);
+      await invoke('save_file_content', { path: configPath, content: newContent });
+
+      // Update local state
+      this._projectTitle.set(title);
+      this._projectAuthor.set(author);
+      this._projectGenre.set(genre);
+
+      return true;
+    } catch (e) {
+      console.error('Failed to update project info:', e);
+      return false;
+    }
+  }
+
+  // Get genre label from value
+  getGenreLabel(value: string): string {
+    const genreMap: Record<string, string> = {
+      'romance': 'โรแมนติก',
+      'fantasy': 'แฟนตาซี',
+      'wuxia': 'กำลังภายใน',
+      'xianxia': 'เทพเซียน',
+      'xuanhuan': 'เซวียนหวน',
+      'litrpg': 'LitRPG',
+      'action': 'แอคชั่น',
+      'horror': 'สยองขวัญ',
+      'drama': 'ดราม่า',
+      'comedy': 'ตลก',
+      'scifi': 'ไซไฟ',
+      'historical': 'ย้อนยุค',
+      'isekai': 'อิเซไก',
+      'yaoi': 'วาย',
+      'yuri': 'ยูริ',
+      'mystery': 'สืบสวน',
+      'slice_of_life': 'Slice of Life',
+      'other': 'อื่นๆ'
+    };
+    return genreMap[value] || value;
+  }
+
   // Get items for active tab (placeholder - will be expanded later)
   getActiveTabItems(): any[] {
     // TODO: Implement loading items from folder
     return [];
   }
 }
+

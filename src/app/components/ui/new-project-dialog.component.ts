@@ -126,14 +126,21 @@ export class NewProjectDialogComponent {
   genres = [
     { value: 'romance', label: 'โรแมนติก / รักหวาน' },
     { value: 'fantasy', label: 'แฟนตาซี / ผจญภัย' },
-    { value: 'action', label: 'แอคชั่น / ผจญภัย' },
+    { value: 'wuxia', label: 'กำลังภายใน / จีนโบราณ' },
+    { value: 'xianxia', label: 'เทพเซียน / บำเพ็ญเซียน' },
+    { value: 'xuanhuan', label: 'เซวียนหวน / แฟนตาซีจีน' },
+    { value: 'litrpg', label: 'LitRPG / เกมโลก' },
+    { value: 'action', label: 'แอคชั่น / ต่อสู้' },
     { value: 'horror', label: 'สยองขวัญ / ลึกลับ' },
     { value: 'drama', label: 'ดราม่า / ชีวิต' },
     { value: 'comedy', label: 'ตลก / เบาสมอง' },
     { value: 'scifi', label: 'ไซไฟ / อนาคต' },
     { value: 'historical', label: 'ย้อนยุค / ประวัติศาสตร์' },
+    { value: 'isekai', label: 'อิเซไก / ข้ามโลก' },
     { value: 'yaoi', label: 'วาย / บอยเลิฟ' },
     { value: 'yuri', label: 'ยูริ / เกิร์ลเลิฟ' },
+    { value: 'mystery', label: 'สืบสวน / แก้ปริศนา' },
+    { value: 'slice_of_life', label: 'Slice of Life / ชีวิตประจำวัน' },
     { value: 'other', label: 'อื่นๆ' },
   ];
   

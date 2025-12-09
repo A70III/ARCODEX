@@ -22,6 +22,29 @@ import { ProjectStateService } from "../../services/project-state.service";
             Codex Library
           </h1>
         </div>
+        
+        <!-- Project Info -->
+        <div class="flex items-center gap-4 text-sm">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[var(--text-secondary)]">ชื่อเรื่อง:</span>
+            <span class="text-[var(--text-primary)] font-medium">{{ codexService.projectTitle() || '-' }}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[var(--text-secondary)]">ผู้เขียน:</span>
+            <span class="text-[var(--text-primary)]">{{ codexService.projectAuthor() || '-' }}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[var(--text-secondary)]">ประเภท:</span>
+            <span class="text-[var(--text-primary)]">{{ codexService.getGenreLabel(codexService.projectGenre()) || '-' }}</span>
+          </div>
+          <button
+            class="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded transition-colors"
+            title="แก้ไขข้อมูลโปรเจค"
+            (click)="openEditProjectDialog()"
+          >
+            <span class="material-icons text-lg">edit</span>
+          </button>
+        </div>
       </div>
 
       <!-- Submenu Tabs -->
@@ -170,6 +193,78 @@ import { ProjectStateService } from "../../services/project-state.service";
         </div>
       </div>
       }
+
+      <!-- Edit Project Dialog -->
+      @if (showEditProjectDialog()) {
+      <div
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-[1001]"
+        (click)="cancelEditProjectDialog()"
+      >
+        <div
+          class="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-5 w-[450px] shadow-xl"
+          (click)="$event.stopPropagation()"
+        >
+          <h3 class="text-base font-medium text-[var(--text-primary)] mb-4">
+            แก้ไขข้อมูลโปรเจค
+          </h3>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm text-[var(--text-secondary)] mb-1.5">
+                ชื่อเรื่อง
+              </label>
+              <input
+                type="text"
+                class="w-full bg-[var(--bg-hover)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm px-3 py-2 rounded outline-none focus:border-[var(--accent)]"
+                [(ngModel)]="editTitle"
+                (keydown.escape)="cancelEditProjectDialog()"
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm text-[var(--text-secondary)] mb-1.5">
+                ผู้เขียน
+              </label>
+              <input
+                type="text"
+                class="w-full bg-[var(--bg-hover)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm px-3 py-2 rounded outline-none focus:border-[var(--accent)]"
+                [(ngModel)]="editAuthor"
+                (keydown.escape)="cancelEditProjectDialog()"
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm text-[var(--text-secondary)] mb-1.5">
+                ประเภท
+              </label>
+              <select
+                class="w-full bg-[var(--bg-hover)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm px-3 py-2 rounded outline-none focus:border-[var(--accent)]"
+                [(ngModel)]="editGenre"
+              >
+                @for (genre of genres; track genre.value) {
+                <option [value]="genre.value">{{ genre.label }}</option>
+                }
+              </select>
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-2 mt-5">
+            <button
+              class="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              (click)="cancelEditProjectDialog()"
+            >
+              ยกเลิก
+            </button>
+            <button
+              class="px-4 py-2 text-sm bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--text-inverse)] rounded"
+              (click)="confirmEditProject()"
+            >
+              บันทึก
+            </button>
+          </div>
+        </div>
+      </div>
+      }
     </div>
   `,
 })
@@ -181,6 +276,34 @@ export class CodexLibraryComponent implements OnInit {
   showAddDialog = signal(false);
   newFolderName = "";
   newDisplayName = "";
+
+  // Edit project dialog state
+  showEditProjectDialog = signal(false);
+  editTitle = "";
+  editAuthor = "";
+  editGenre = "";
+
+  // Genre options (same as new-project-dialog)
+  genres = [
+    { value: 'romance', label: 'โรแมนติก / รักหวาน' },
+    { value: 'fantasy', label: 'แฟนตาซี / ผจญภัย' },
+    { value: 'wuxia', label: 'กำลังภายใน / จีนโบราณ' },
+    { value: 'xianxia', label: 'เทพเซียน / บำเพ็ญเซียน' },
+    { value: 'xuanhuan', label: 'เซวียนหวน / แฟนตาซีจีน' },
+    { value: 'litrpg', label: 'LitRPG / เกมโลก' },
+    { value: 'action', label: 'แอคชั่น / ต่อสู้' },
+    { value: 'horror', label: 'สยองขวัญ / ลึกลับ' },
+    { value: 'drama', label: 'ดราม่า / ชีวิต' },
+    { value: 'comedy', label: 'ตลก / เบาสมอง' },
+    { value: 'scifi', label: 'ไซไฟ / อนาคต' },
+    { value: 'historical', label: 'ย้อนยุค / ประวัติศาสตร์' },
+    { value: 'isekai', label: 'อิเซไก / ข้ามโลก' },
+    { value: 'yaoi', label: 'วาย / บอยเลิฟ' },
+    { value: 'yuri', label: 'ยูริ / เกิร์ลเลิฟ' },
+    { value: 'mystery', label: 'สืบสวน / แก้ปริศนา' },
+    { value: 'slice_of_life', label: 'Slice of Life / ชีวิตประจำวัน' },
+    { value: 'other', label: 'อื่นๆ' },
+  ];
 
   constructor() {
     // Reload codex when view becomes active
@@ -205,7 +328,7 @@ export class CodexLibraryComponent implements OnInit {
     return item?.label || tab;
   }
 
-  // Dialog methods
+  // Add Category Dialog
   openAddCategoryDialog(): void {
     this.newFolderName = "";
     this.newDisplayName = "";
@@ -226,5 +349,26 @@ export class CodexLibraryComponent implements OnInit {
 
     await this.codexService.createCategory(folderName, displayName);
     this.cancelAddDialog();
+  }
+
+  // Edit Project Dialog
+  openEditProjectDialog(): void {
+    this.editTitle = this.codexService.projectTitle();
+    this.editAuthor = this.codexService.projectAuthor();
+    this.editGenre = this.codexService.projectGenre();
+    this.showEditProjectDialog.set(true);
+  }
+
+  cancelEditProjectDialog(): void {
+    this.showEditProjectDialog.set(false);
+  }
+
+  async confirmEditProject(): Promise<void> {
+    await this.codexService.updateProjectInfo(
+      this.editTitle.trim(),
+      this.editAuthor.trim(),
+      this.editGenre
+    );
+    this.cancelEditProjectDialog();
   }
 }

@@ -87,6 +87,8 @@ export class ProjectStateService {
     this._fileTree.set(null);
     this._openedFiles.set([]);
     this._activeFilePath.set('');
+    // Reset sidebar view to explorer (welcome page shown when no project)
+    this.activeSidebarView.set('explorer');
   }
 
   /**
