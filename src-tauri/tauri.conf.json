@@ -15,7 +15,7 @@
         "title": "Arc",
         "width": 1000,
         "height": 700,
-        "decorations": false,
+        "decorations": true,
         "center": true,
         "resizable": true
       }
