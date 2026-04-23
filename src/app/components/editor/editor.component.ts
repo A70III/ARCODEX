@@ -279,57 +279,99 @@ const searchHighlightPlugin = new Plugin({
       </div>
       }
 
-      <!-- Search Bar (VS Code style) -->
-      @if (searchVisible() && projectState.activeFile()) {
-      <div class="search-bar">
-        <div class="search-container">
-          <input
-            #searchInput
-            type="text"
-            class="search-input"
-            placeholder="ค้นหา..."
-            [(ngModel)]="searchQuery"
-            (input)="onSearchInput()"
-            (keydown)="onSearchKeydown($event)"
-          />
-      @if (totalMatches() > 0) {
-          <span class="search-count">
-            {{ currentMatchIndex() + 1 }} / {{ totalMatches() }}{{ totalMatches() >= 1000 ? '+' : '' }}
-          </span>
-          }
-          @if (searchQuery && totalMatches() === 0) {
-          <span class="search-count no-results">
-            ไม่พบผลลัพธ์
-          </span>
-          }
+        <!-- Search Bar (VS Code style) -->
+        @if (searchVisible() && projectState.activeFile()) {
+        <div class="search-bar">
+          <div class="search-container">
+            <input
+              #searchInput
+              type="text"
+              class="search-input"
+              placeholder="ค้นหา..."
+              [(ngModel)]="searchQuery"
+              (input)="onSearchInput()"
+              (keydown)="onSearchKeydown($event)"
+            />
+        @if (totalMatches() > 0) {
+            <span class="search-count">
+              {{ currentMatchIndex() + 1 }} / {{ totalMatches() }}{{ totalMatches() >= 1000 ? '+' : '' }}
+            </span>
+            }
+            @if (searchQuery && totalMatches() === 0) {
+            <span class="search-count no-results">
+              ไม่พบผลลัพธ์
+            </span>
+            }
+          </div>
+          <div class="search-buttons">
+            <button
+              class="search-btn"
+              (click)="goToPrevMatch()"
+              [disabled]="totalMatches() === 0"
+              title="ก่อนหน้า (Shift+Enter)"
+            >
+              <span class="material-icons">keyboard_arrow_up</span>
+            </button>
+            <button
+              class="search-btn"
+              (click)="goToNextMatch()"
+              [disabled]="totalMatches() === 0"
+              title="ถัดไป (Enter)"
+            >
+              <span class="material-icons">keyboard_arrow_down</span>
+            </button>
+            <button
+              class="search-btn"
+              (click)="toggleReplace()"
+              [class.active]="replaceVisible()"
+              title="แทนที่ (Ctrl+H)"
+            >
+              <span class="material-icons">find_replace</span>
+            </button>
+            <button
+              class="search-btn close-btn"
+              (click)="closeSearch()"
+              title="ปิด (Escape)"
+            >
+              <span class="material-icons">close</span>
+            </button>
+          </div>
         </div>
-        <div class="search-buttons">
-          <button
-            class="search-btn"
-            (click)="goToPrevMatch()"
-            [disabled]="totalMatches() === 0"
-            title="ก่อนหน้า (Shift+Enter)"
-          >
-            <span class="material-icons">keyboard_arrow_up</span>
-          </button>
-          <button
-            class="search-btn"
-            (click)="goToNextMatch()"
-            [disabled]="totalMatches() === 0"
-            title="ถัดไป (Enter)"
-          >
-            <span class="material-icons">keyboard_arrow_down</span>
-          </button>
-          <button
-            class="search-btn close-btn"
-            (click)="closeSearch()"
-            title="ปิด (Escape)"
-          >
-            <span class="material-icons">close</span>
-          </button>
+
+        <!-- Replace Bar -->
+        @if (replaceVisible()) {
+        <div class="replace-bar">
+          <div class="replace-container">
+            <input
+              #replaceInput
+              type="text"
+              class="replace-input"
+              placeholder="แทนที่ด้วย..."
+              [(ngModel)]="replaceQuery"
+              (keydown)="onReplaceKeydown($event)"
+            />
+          </div>
+          <div class="replace-buttons">
+            <button
+              class="replace-btn"
+              (click)="replaceOne()"
+              [disabled]="totalMatches() === 0"
+              title="แทนที่"
+            >
+              แทนที่
+            </button>
+              <button
+                class="replace-btn"
+                (click)="replaceAll()"
+                [disabled]="totalMatches() === 0"
+                title="แทนที่ทั้งหมด"
+              >
+                ทั้งหมด
+              </button>
+          </div>
         </div>
-      </div>
-      }
+        }
+        }
 
       <!-- Editor area -->
       <div class="flex-1 overflow-auto" (keydown)="onKeyDown($event)">
@@ -360,7 +402,7 @@ const searchHighlightPlugin = new Plugin({
   `,
   styles: [
     `
-      :host {
+       :host {
         display: block;
         height: 100%;
       }
@@ -601,6 +643,74 @@ const searchHighlightPlugin = new Plugin({
         color: white;
       }
 
+      .search-btn.active {
+        background-color: var(--bg-active);
+        color: var(--accent);
+      }
+
+      /* Replace Bar Styles */
+      .replace-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background-color: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .replace-container {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        max-width: 400px;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 0 8px;
+      }
+
+      .replace-input {
+        flex: 1;
+        padding: 6px 0;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--text-primary);
+        font-size: 13px;
+        min-width: 150px;
+      }
+
+      .replace-input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .replace-buttons {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .replace-btn {
+        padding: 4px 12px;
+        font-size: 12px;
+        background-color: var(--bg-hover);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .replace-btn:hover:not(:disabled) {
+        background-color: var(--bg-active);
+        border-color: var(--accent);
+      }
+
+      .replace-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
       /* Search highlight styles */
       :host ::ng-deep .search-highlight {
         background-color: var(--warning);
@@ -638,6 +748,11 @@ export class EditorComponent implements OnDestroy {
   readonly totalMatches = signal(0);
   private searchMatches: Array<{ from: number; to: number }> = [];
   private searchDebounceTimer: any = null;
+
+  // Replace state
+  readonly replaceVisible = signal(false);
+  replaceQuery = '';
+  private replaceAllFlag = signal(false);
 
   // Line numbers - computed from editor content with caching
   private _lineCount = signal(1);
@@ -1039,8 +1154,17 @@ export class EditorComponent implements OnDestroy {
       return;
     }
 
-    // Escape to close search
-    if (event.key === 'Escape' && this.searchVisible()) {
+    // Ctrl+H to open replace
+    if (isCtrlOrCmd && event.key.toLowerCase() === 'h') {
+      event.preventDefault();
+      if (this.projectState.activeFile()) {
+        this.openReplace();
+      }
+      return;
+    }
+
+    // Escape to close search/replace
+    if (event.key === 'Escape' && (this.searchVisible() || this.replaceVisible())) {
       event.preventDefault();
       this.closeSearch();
       return;
@@ -1056,6 +1180,7 @@ export class EditorComponent implements OnDestroy {
 
   openSearch(): void {
     this.searchVisible.set(true);
+    this.replaceVisible.set(false);
     // Focus search input after view updates
     setTimeout(() => {
       this.searchInput?.nativeElement?.focus();
@@ -1063,9 +1188,31 @@ export class EditorComponent implements OnDestroy {
     }, 0);
   }
 
+  openReplace(): void {
+    this.searchVisible.set(true);
+    this.replaceVisible.set(true);
+    // Focus replace input after view updates
+    setTimeout(() => {
+      const replaceInput = document.querySelector('input[placeholder="แทนที่ด้วย..."]') as HTMLInputElement;
+      replaceInput?.focus();
+    }, 0);
+  }
+
+  toggleReplace(): void {
+    this.replaceVisible.update(v => !v);
+    if (this.replaceVisible()) {
+      setTimeout(() => {
+        const replaceInput = document.querySelector('input[placeholder="แทนที่ด้วย..."]') as HTMLInputElement;
+        replaceInput?.focus();
+      }, 0);
+    }
+  }
+
   closeSearch(): void {
     this.searchVisible.set(false);
+    this.replaceVisible.set(false);
     this.searchQuery = '';
+    this.replaceQuery = '';
     this.searchMatches = [];
     this.currentMatchIndex.set(0);
     this.totalMatches.set(0);
@@ -1092,6 +1239,16 @@ export class EditorComponent implements OnDestroy {
       } else {
         this.goToNextMatch();
       }
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closeSearch();
+    }
+  }
+
+  onReplaceKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.replaceOne();
     } else if (event.key === 'Escape') {
       event.preventDefault();
       this.closeSearch();
@@ -1194,6 +1351,54 @@ export class EditorComponent implements OnDestroy {
     this.editor.view.dispatch(
       this.editor.state.tr.setMeta(searchHighlightPluginKey, { clear: true })
     );
+  }
+
+  // --- Replace Methods ---
+
+  replaceOne(): void {
+    if (!this.editor || this.searchMatches.length === 0) return;
+
+    const match = this.searchMatches[this.currentMatchIndex()];
+    if (!match) return;
+
+    const replaceText = this.replaceQuery;
+
+    // Replace text at current match position
+    this.editor.commands.focus();
+    this.editor.commands.setTextSelection({ from: match.from, to: match.to });
+    this.editor.commands.insertContent(replaceText);
+
+    // Recalculate matches after replace
+    setTimeout(() => {
+      this.performSearch();
+      if (this.searchMatches.length > 0) {
+        this.updateHighlights();
+        this.scrollToCurrentMatch();
+      }
+    }, 50);
+  }
+
+  replaceAll(): void {
+    if (!this.editor || this.searchMatches.length === 0) return;
+
+    const replaceText = this.replaceQuery;
+    let matches = [...this.searchMatches];
+
+    // Sort matches in reverse order to maintain positions
+    matches.sort((a, b) => b.from - a.from);
+
+    // Replace all matches from end to start
+    this.editor.commands.focus();
+
+    for (const match of matches) {
+      this.editor.commands.setTextSelection({ from: match.from, to: match.to });
+      this.editor.commands.insertContent(replaceText);
+    }
+
+    // Clear search after replace all
+    setTimeout(() => {
+      this.performSearch();
+    }, 50);
   }
 
   // --- Icons ---

@@ -1,6 +1,8 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { invoke } from '@tauri-apps/api/core';
 import { ProjectStateService } from './project-state.service';
+import { CodexItem, CodexCategory } from '../models/codex.model';
+export type { CodexItem, CodexCategory };
 
 export interface CodexSubmenuItem {
   folder: string;
@@ -28,6 +30,7 @@ export class CodexService {
   private _customLabels = signal<Record<string, string>>({});
   private _loading = signal(false);
   private _activeTab = signal<string>('all');
+  private _items = signal<CodexItem[]>([]);
   
   // Project info signals
   private _projectTitle = signal<string>('');
@@ -41,6 +44,7 @@ export class CodexService {
   readonly projectTitle = this._projectTitle.asReadonly();
   readonly projectAuthor = this._projectAuthor.asReadonly();
   readonly projectGenre = this._projectGenre.asReadonly();
+  readonly items = this._items.asReadonly();
 
   // Computed: submenu items with labels
   readonly submenuItems = computed(() => {
@@ -50,6 +54,31 @@ export class CodexService {
     return folders.map(folder => ({
       folder,
       label: customLabels[folder] || folder
+    }));
+  });
+
+  // Computed: items for active tab
+  readonly activeTabItems = computed(() => {
+    const tab = this._activeTab();
+    const allItems = this._items();
+    
+    if (tab === 'all') return allItems;
+    return allItems.filter(item => {
+      const itemFolder = this.getItemFolder(item.path);
+      return itemFolder === tab;
+    });
+  });
+
+  // Computed: categories with items
+  readonly categories = computed((): CodexCategory[] => {
+    const folders = this._folders();
+    const customLabels = this._customLabels();
+    const allItems = this._items();
+    
+    return folders.map(folder => ({
+      folder,
+      label: customLabels[folder] || folder,
+      items: allItems.filter(item => this.getItemFolder(item.path) === folder)
     }));
   });
 
@@ -80,6 +109,9 @@ export class CodexService {
       
       // Load project info
       await this.loadProjectInfo();
+      
+      // Load all items
+      await this.loadItems();
       
     } catch (e) {
       console.error('Failed to load codex:', e);
@@ -143,6 +175,49 @@ export class CodexService {
     }
   }
 
+  // Load all items from all codex folders
+  async loadItems(): Promise<void> {
+    const codexPath = this.getCodexFolderPath();
+    if (!codexPath) {
+      this._items.set([]);
+      return;
+    }
+
+    try {
+      const folders = this._folders();
+      const allItems: CodexItem[] = [];
+      
+      for (const folder of folders) {
+        const folderPath = `${codexPath}/${folder}`;
+        try {
+          const tree = await invoke<{ children?: { name: string; path: string; is_dir: boolean }[] }>('read_project_dir', { path: folderPath });
+          const files = (tree.children || []).filter(child => !child.is_dir);
+          
+          for (const file of files) {
+            try {
+              const content = await invoke<string>('read_file_content', { path: file.path });
+              allItems.push({
+                id: file.path,
+                name: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+                path: file.path,
+                content: content
+              });
+            } catch (e) {
+              console.warn(`Failed to read file ${file.path}:`, e);
+            }
+          }
+        } catch (e) {
+          console.warn(`Failed to read folder ${folderPath}:`, e);
+        }
+      }
+      
+      this._items.set(allItems);
+    } catch (e) {
+      console.error('Failed to load items:', e);
+      this._items.set([]);
+    }
+  }
+
   // Reset all state (called when project is closed)
   reset(): void {
     this._folders.set([]);
@@ -152,6 +227,7 @@ export class CodexService {
     this._projectAuthor.set('');
     this._projectGenre.set('');
     this._loading.set(false);
+    this._items.set([]);
   }
 
   // Set active tab
@@ -297,10 +373,86 @@ export class CodexService {
     return genreMap[value] || value;
   }
 
-  // Get items for active tab (placeholder - will be expanded later)
-  getActiveTabItems(): any[] {
-    // TODO: Implement loading items from folder
-    return [];
+  // Get items for active tab
+  getActiveTabItems(): CodexItem[] {
+    return this.activeTabItems();
+  }
+
+  // Helper: get folder from item path
+  getItemFolder(itemPath: string): string {
+    const codexPath = this.getCodexFolderPath();
+    if (!codexPath) return '';
+    const relative = itemPath.replace(codexPath + '/', '');
+    const parts = relative.split('/');
+    return parts.length > 1 ? parts[0] : '';
+  }
+
+  // Create new item in active folder
+  async createItem(name: string, content: string): Promise<boolean> {
+    const activeTab = this._activeTab();
+    if (activeTab === 'all') return false;
+
+    const codexPath = this.getCodexFolderPath();
+    if (!codexPath) return false;
+
+    try {
+      const fileName = name.endsWith('.md') ? name : `${name}.md`;
+      const filePath = `${codexPath}/${activeTab}/${fileName}`;
+      
+      await invoke('save_file_content', { path: filePath, content });
+      
+      // Reload items
+      await this.loadItems();
+      
+      // Refresh file tree
+      this.projectState.refreshFileTree();
+      
+      return true;
+    } catch (e) {
+      console.error('Failed to create item:', e);
+      return false;
+    }
+  }
+
+  // Delete item
+  async deleteItem(item: CodexItem): Promise<boolean> {
+    try {
+      await invoke('delete_file', { path: item.path });
+      
+      // Reload items
+      await this.loadItems();
+      
+      // Refresh file tree
+      this.projectState.refreshFileTree();
+      
+      return true;
+    } catch (e) {
+      console.error('Failed to delete item:', e);
+      return false;
+    }
+  }
+
+  // Rename item
+  async renameItem(item: CodexItem, newName: string): Promise<boolean> {
+    try {
+      const newFileName = newName.endsWith('.md') ? newName : `${newName}.md`;
+      const pathParts = item.path.split('/');
+      pathParts[pathParts.length - 1] = newFileName;
+      const newPath = pathParts.join('/');
+      
+      await invoke('rename_item', { oldPath: item.path, newPath });
+      
+      // Reload items
+      await this.loadItems();
+      
+      // Refresh file tree
+      this.projectState.refreshFileTree();
+      
+      return true;
+    } catch (e) {
+      console.error('Failed to rename item:', e);
+      return false;
+    }
   }
 }
 

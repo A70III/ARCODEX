@@ -1,4 +1,4 @@
-import { Component, Input, inject, signal, forwardRef, HostListener, ElementRef, ViewChild, computed } from '@angular/core';
+import { Component, Input, inject, signal, forwardRef, HostListener, ElementRef, ViewChild, computed, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common'; 
 import { FormsModule } from '@angular/forms';
 import { FileNode } from '../../../models/file-node.model';
@@ -17,21 +17,30 @@ interface ContextMenuState {
   imports: [CommonModule, FormsModule, forwardRef(() => FileTreeComponent)],
   template: `
     @for (child of sortedChildren(); track child.path) {
-      <div class="select-none group">
+      <div 
+        class="select-none group"
+        [attr.draggable]="!child.is_dir"
+        (dragstart)="onDragStart($event, child)"
+        (dragover)="onDragOver($event, child)"
+        (drop)="onDrop($event, child)"
+        (dragend)="onDragEnd()"
+      >
         @if (child.is_dir) {
           <!-- Folder -->
           <div 
             class="flex items-center gap-1 py-0.5 px-1 cursor-pointer hover:bg-[var(--bg-hover)] hover:outline hover:outline-1 hover:outline-white/20 rounded-sm text-[var(--text-primary)]"
+            [class.bg-[var(--bg-active)]]="isFolderDragOver(child.path)"
             [style.padding-left.px]="depth * 12 + 4"
             (click)="toggleFolder(child.path)"
             (contextmenu)="onContextMenu($event, child)"
-            
           >
             <span class="material-icons text-sm text-[var(--text-primary)]">
-              {{ isExpanded(child.path) ? 'expand_more' : 'chevron_right' }}
+              {{ isExpanded(child.path) ? "expand_more" : "chevron_right" }}
             </span>
-            <span class="material-icons text-base text-[var(--warning)]">
-              {{ isExpanded(child.path) ? 'folder_open' : 'folder' }}
+            <span class="material-icons text-base" 
+                  [class.text-[var(--warning)]]="!isFolderDragOver(child.path)" 
+                  [class.text-[var(--warning)]]="isFolderDragOver(child.path)">
+              {{ isExpanded(child.path) ? "folder_open" : "folder" }}
             </span>
             <span class="text-sm truncate select-none pointer-events-none">{{ child.name }}</span>
             
@@ -86,6 +95,8 @@ interface ContextMenuState {
             [style.padding-left.px]="depth * 12 + 20"
             (click)="onFileClick(child)"
             (contextmenu)="onContextMenu($event, child)"
+            [attr.draggable]="true"
+            (dragstart)="onDragStart($event, child)"
           >
             <span class="material-icons text-base" [class]="getFileIconClass(child.name)">
               {{ getFileIcon(child.name) }}
@@ -93,14 +104,14 @@ interface ContextMenuState {
             
             @if (renamingNode()?.path === child.path) {
                 <input
-                #renameInput
-                type="text"
-                class="flex-1 bg-[var(--bg-hover)] border border-[var(--accent)] text-[var(--text-primary)] text-sm px-1 py-0 rounded outline-none min-w-[50px] h-[20px]"
-                [(ngModel)]="renamingNode()!.name"
-                (keydown.enter)="confirmRename()"
-                (keydown.escape)="cancelRename()"
-                (blur)="confirmRename()"
-                (click)="$event.stopPropagation()"
+                  #renameInput
+                  type="text"
+                  class="flex-1 bg-[var(--bg-hover)] border border-[var(--accent)] text-[var(--text-primary)] text-sm px-1 py-0 rounded outline-none min-w-[50px] h-[20px]"
+                  [(ngModel)]="renamingNode()!.name"
+                  (keydown.enter)="confirmRename()"
+                  (keydown.escape)="cancelRename()"
+                  (blur)="confirmRename()"
+                  (click)="$event.stopPropagation()"
                 />
             } @else {
                 <span class="text-sm truncate text-[var(--text-primary)]" [class.text-[var(--text-inverse)]]="isActive(child.path)">{{ child.name }}</span>
@@ -204,6 +215,12 @@ export class FileTreeComponent {
     file: null
   });
 
+  // Drag & Drop state
+  draggedNode = signal<FileNode | null>(null);
+  dragOverPath = signal<string | null>(null);
+
+  @Output() fileMoved = new EventEmitter<{ oldPath: string; newPath: string }>();
+
   @HostListener('document:click')
   onDocumentClick(): void {
     this.closeContextMenu();
@@ -218,6 +235,10 @@ export class FileTreeComponent {
 
   isExpanded(path: string): boolean {
     return this.expandedFolders().has(path);
+  }
+
+  isFolderDragOver(path: string): boolean {
+    return this.dragOverPath() === path;
   }
 
   toggleFolder(path: string): void {
@@ -259,6 +280,61 @@ export class FileTreeComponent {
     this.contextMenu.update(state => ({ ...state, visible: false }));
   }
 
+  // --- Drag & Drop Methods ---
+
+  onDragStart(event: DragEvent, node: FileNode): void {
+    if (!node.is_dir) {
+      event.dataTransfer?.setData('text/plain', node.path);
+      this.draggedNode.set(node);
+    }
+  }
+
+  onDragOver(event: DragEvent, node: FileNode): void {
+    event.preventDefault();
+    // Only allow dropping into folders
+    if (node.is_dir && this.draggedNode() && this.draggedNode()!.path !== node.path) {
+      event.dataTransfer!.dropEffect = 'move';
+      this.dragOverPath.set(node.path);
+    }
+  }
+
+  onDrop(event: DragEvent, targetNode: FileNode): void {
+    event.preventDefault();
+    
+    const dragged = this.draggedNode();
+    if (!dragged || !targetNode.is_dir) return;
+    
+    const oldPath = dragged.path;
+    const fileName = dragged.name;
+    
+    // Construct new path
+    let newPath: string;
+    if (targetNode.path.endsWith('/') || targetNode.path.endsWith('\\')) {
+      newPath = `${targetNode.path}${fileName}`;
+    } else {
+      newPath = `${targetNode.path}/${fileName}`;
+    }
+    
+    // Avoid moving into itself
+    if (oldPath === newPath) {
+      this.onDragEnd();
+      return;
+    }
+    
+    // Move file/folder
+    this.projectState.renameItem(oldPath, newPath);
+    
+    // Emit event for parent to handle
+    this.fileMoved.emit({ oldPath, newPath });
+    
+    this.onDragEnd();
+  }
+
+  onDragEnd(): void {
+    this.draggedNode.set(null);
+    this.dragOverPath.set(null);
+  }
+
   // --- Actions ---
 
   openFile(): void {
@@ -288,8 +364,8 @@ export class FileTreeComponent {
         } else {
              // Fallback if viewchild update is slow
              const inputs = document.querySelectorAll('input[type="text"]');
-             if(inputs.length) (inputs[inputs.length - 1] as HTMLElement).focus();
-        }
+             if (inputs.length) (inputs[inputs.length - 1] as HTMLElement).focus();
+         }
       }, 50);
     }
     this.closeContextMenu();
@@ -337,7 +413,7 @@ export class FileTreeComponent {
          } else {
              // Fallback
              const inputs = document.querySelectorAll('input[type="text"]');
-             if(inputs.length) (inputs[inputs.length - 1] as HTMLInputElement).select();
+             if (inputs.length) (inputs[inputs.length - 1] as HTMLInputElement).select();
          }
       }, 50);
     }

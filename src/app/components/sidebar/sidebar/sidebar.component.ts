@@ -108,7 +108,11 @@ import { ChaptersComponent } from '../chapters/chapters.component';
       <!-- File tree -->
       @if (projectExpanded() && projectState.fileTree()) {
       <div class="flex-1 overflow-y-auto pl-2">
-        <app-file-tree [node]="projectState.fileTree()!" [depth]="0" />
+        <app-file-tree 
+          [node]="projectState.fileTree()!" 
+          [depth]="0" 
+          (fileMoved)="onFileMoved($event)" 
+        />
       </div>
       } } @else {
       <!-- No folder opened -->
@@ -243,6 +247,10 @@ export class SidebarComponent implements OnDestroy {
 
   onOpenProject(): void {
     this.projectState.openProject();
+  }
+
+  onFileMoved(event: { oldPath: string; newPath: string }): void {
+    // File move is already handled by FileTreeComponent and ProjectStateService
   }
 
   async onRefresh(event: Event): Promise<void> {

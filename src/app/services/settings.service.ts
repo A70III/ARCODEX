@@ -22,7 +22,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   showLineNumbers: false,
 };
 
-const STORAGE_KEY = 'tales-ide-settings';
+const STORAGE_KEY = 'arcodex-settings';
 
 @Injectable({
   providedIn: 'root'
